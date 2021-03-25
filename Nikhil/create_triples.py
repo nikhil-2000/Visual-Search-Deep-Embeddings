@@ -1,6 +1,7 @@
 import os
 import numpy as np
-import cv2
+import torch
+from PIL import Image
 
 images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
 
@@ -16,14 +17,9 @@ def load_images_by_dir(n = 0):
 
     for dir in image_directory:
         path = os.path.join(images_path,dir)
-        images[dir] = [cv2.imread(path + "/" + img_name) for img_name in os.listdir(path)]
-        # for img in images[dir]:
-        #     try:
-        #         assert (img.shape == (1334, 1000, 3) or img.shape == (1333, 1000, 3))
-        #     except AssertionError:
-        #         print(img.shape)
-        #         print(dir)
+        dir_imgs = [Image.open(path + "/" + img_name) for img_name in os.listdir(path)]
 
+        images[dir] = [np.array(img) for img in dir_imgs]
         i+= 1
 
         if i % 100 == 0:
@@ -52,9 +48,8 @@ def create_triples(images):
     # np.save("triples.npy", triples)
     return triples
 
-
 # n = 1500 all images
-n = 100
+n = 1500
 
 imgs = load_images_by_dir(n)
 triples = create_triples(imgs)
