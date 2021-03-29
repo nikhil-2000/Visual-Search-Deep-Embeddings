@@ -1,111 +1,102 @@
+import pickle
+
+import cv2
 import torch.utils.data as data
 from torch.utils.data import Dataset,DataLoader
 from torchvision import transforms
 
-from PIL import Image
+from PIL import Image, ImageStat
 import torch
 import numpy as np
 import os
 import random
 from matplotlib import cm
+from tqdm import tqdm
+
 ##Generating Triples method from this article https://towardsdatascience.com/image-similarity-using-triplet-loss-3744c0f67973
 
 
 class ClothesDataset(Dataset):
 
-    def __init__(self,image_path, n , transform=None, sample_for_negatives = 100):
-
+    def __init__(self,image_path, n , transform=None, sample_for_negatives = 100, load_data = False):
         self.root = image_path
         self.max_images = n
         self.transform = transform
         self.samples = sample_for_negatives
 
-        image_directory = os.listdir(self.root)
-        image_directory = image_directory if n == 0 or n >= len(image_directory) else image_directory[:n]
-        images = {}
-        i = 0
+        if load_data:
 
-        for dir in image_directory:
-            path = os.path.join(self.root, dir)
-            images[dir] = [path + "/" + img_name for img_name in os.listdir(path)]
-            i += len(images[dir])
+            image_directory = os.listdir(self.root)
+            image_directory = image_directory if n == 0 or n >= len(image_directory) else image_directory[:n]
+            images = {}
+            i = 0
 
-        self.images = images
-        self.total_imgs = i
+            for dir in tqdm(image_directory):
+                path = os.path.join(self.root, dir)
+                images[dir] = [self.load_and_transform(path,img_name) for img_name in os.listdir(path)]
+                i += len(images[dir])
+
+            self.images = images
+            self.total_imgs = i
+            with open('images.p', 'wb') as fp:
+                pickle.dump(images, fp, protocol=pickle.HIGHEST_PROTOCOL)
+
+            print("Loaded")
+
+        else:
+            with open('images.p', 'rb') as fp:
+                images = pickle.load(fp)
+                self.total_imgs = sum(list(map(len, images.values())))
+                self.images = images
+                print("Loaded")
+
+
 
 
     def __len__(self):
         return self.total_imgs
 
+    def load_and_transform(self, path, img_name):
+        img = Image.open(path + "/" + img_name)
+
+        if self.transform:
+            img =  self.transform(img)
+
+        return np.array(img)
+
     def __getitem__(self, idx):
         idx = np.random.randint(0, len(self.images.keys()))
         chosen_dir,dir_imgs = list(self.images.items())[idx]
 
-
-        idxs = np.arange(0, len(dir_imgs))
-        a_idx, p_idx = np.random.choice(idxs, size=2, replace=False)
+        idxs = np.arange(1, len(dir_imgs))
+        a_idx, p_idx = 0, np.random.choice(idxs)
         anchor, positive = dir_imgs[a_idx], dir_imgs[p_idx]
 
         other_dirs = list(self.images.keys())
         other_dirs.remove(chosen_dir)
         negative = self.get_close_negative(anchor, other_dirs)
 
-        img_names = [anchor,positive,negative]
-        triple = []
-
-        for name in img_names:
-            img = Image.open(name)
-
-            if self.transform:
-                img = self.transform(img)
-
-            triple.append(np.array(img))
-
-
-
+        triple = [anchor,positive,negative]
 
         return tuple(triple)
 
     def get_close_negative(self, anchor, other_dirs):
-
-        anchor = Image.open(anchor)
-        if self.transform:
-            anchor = self.transform(anchor)
-
-        anchor = np.array(anchor)
+        w, h, _ = anchor.shape
+        anchor = Image.fromarray(anchor)
 
         negative_images_dir = random.sample(other_dirs, self.samples)
         smallest_diff = None
 
-        for i,n_dir in enumerate(negative_images_dir):
-            neg_img_paths = self.images[n_dir]
+        for n_dir in tqdm(negative_images_dir):
+            neg_img = Image.fromarray(self.images[n_dir][0])
 
-            for i,neg_img_path in enumerate(neg_img_paths):
-                neg_img = Image.open(neg_img_path)
+            neg_diff = 1/(w * h) * np.sum(abs(anchor - neg_img))
 
-                if self.transform:
-                    neg_img = self.transform(neg_img)
+            if smallest_diff == None or smallest_diff > neg_diff:
+                smallest_diff = neg_diff
+                closest_negative = neg_img
 
-                neg_img = np.array(neg_img)
-
-                diff = np.sum((anchor.astype("float") - neg_img.astype("float")) ** 2)
-
-                if (smallest_diff == None):
-                    smallest_diff = diff
-
-                if smallest_diff > diff:
-                    smallest_diff = diff
-                    closest_negative_folder = n_dir
-                    closest_idx = i
-
-
-        # print(diff)
-        return self.images[closest_negative_folder][closest_idx]
-
-
-
-
-
+        return closest_negative
 
 
 
@@ -116,10 +107,10 @@ images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
 if __name__ == '__main__':
 
     transform = transforms.Resize((1333,1000))
-    dataset = ClothesDataset(images_path, 1000, transform = transform, sample_for_negatives= 100)
+    dataset = ClothesDataset(images_path, 500, transform = transform, sample_for_negatives= 99, load_data=False)
     dataloader = DataLoader(dataset, batch_size = 5, shuffle=True)
 
-    test = dataset[10]
+    test = dataset[20]
     anchor , positive , negative = test
 
     anchor_im = Image.fromarray(np.uint8(anchor))

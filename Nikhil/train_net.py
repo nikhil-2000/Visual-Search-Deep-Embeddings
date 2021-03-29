@@ -20,7 +20,7 @@ emb_size = 10
 net = Net(emb_size=10)
 
 transform = transforms.Resize((67, 50))
-dataset = ClothesDataset(images_path, 100, transform=transform)
+dataset = ClothesDataset(images_path, 1500, transform=transform, sample_for_negatives= 1)
 train_data = DataLoader(dataset, batch_size=20, shuffle=True)
 
 optimizer = optim.Adam(net.parameters(), lr=0.001)
@@ -43,6 +43,7 @@ for epoch in range(EPOCHS):
     running_loss = []
     for step, (anchor_img, positive_img, negative_img) in enumerate(train_data):
         optimizer.zero_grad()
+        print(anchor_img.shape)
         anchor_out = net(anchor_img)
         positive_out = net(positive_img)
         negative_out = net(negative_img)

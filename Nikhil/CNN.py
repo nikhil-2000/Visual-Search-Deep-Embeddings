@@ -19,11 +19,7 @@ class Net(nn.Module):
         self.fc2 = nn.Linear(512, emb_size)
 
     def _conv_layer_set(self, in_c, out_c):
-        conv_layer = nn.Sequential(
-        nn.Conv3d(in_c, out_c, kernel_size=(3, 3, 3), padding=0),
-        nn.LeakyReLU(),
-        nn.MaxPool3d((2, 2, 2)),
-        )
+        conv_layer = nn.Conv3d(in_c, out_c, kernel_size=(3, 3, 3), padding=0)
         return conv_layer
 
     def convs(self, x):
