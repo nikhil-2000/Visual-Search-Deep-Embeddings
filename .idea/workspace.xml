@@ -2,11 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7cfcb58a-2e85-42f3-bdd4-a42515f706b5" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/Nikhil/generate_fourier_matrix.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Nikhil/CNN.py" beforeDir="false" afterPath="$PROJECT_DIR$/Nikhil/CNN.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Nikhil/train_net.py" beforeDir="false" afterPath="$PROJECT_DIR$/Nikhil/train_net.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Nikhil/triples_dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/Nikhil/triples_dataset.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Nikhil/generate_fourier_matrix.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Nikhil/generate_fourier_matrix.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -154,7 +151,7 @@
       <workItem from="1616881455843" duration="2741000" />
       <workItem from="1616889796419" duration="13000" />
       <workItem from="1617025057484" duration="476000" />
-      <workItem from="1617034382777" duration="16366000" />
+      <workItem from="1617034382777" duration="17342000" />
     </task>
     <servers />
   </component>
