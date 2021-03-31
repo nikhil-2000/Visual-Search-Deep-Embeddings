@@ -11,6 +11,7 @@ import numpy as np
 import os
 import random
 from matplotlib import cm
+from torchvision.datasets import ImageFolder
 from tqdm import tqdm
 
 ##Generating Triples method from this article https://towardsdatascience.com/image-similarity-using-triplet-loss-3744c0f67973
@@ -98,7 +99,10 @@ class ClothesDataset(Dataset):
 
         return closest_negative
 
-
+class ClothesFolder(ImageFolder):
+    
+    def __init__(self,image_path, n , transform=None, sample_for_negatives = 100, load_data = False):
+        super(ClothesFolder, self).__init__(root=image_path, transform = transform)
 
 images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
 
