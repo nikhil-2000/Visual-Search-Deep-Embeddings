@@ -12,7 +12,8 @@ import torch.nn.functional as f
 
 import tqdm
 
-images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
+# images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
+images_path = "../../uob_image_set"
 
 BATCH_SIZE = 20
 emb_size = 10
@@ -55,7 +56,8 @@ for epoch in range(EPOCHS):
         running_loss.append(loss.cpu().detach().numpy())
     print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, EPOCHS, np.mean(running_loss)))
 
-outpath = "D:\My Docs/University\Applied Data Science\Project\Visual-Search-Deep-Embeddings/Nikhil"
+# outpath = "D:\My Docs/University\Applied Data Science\Project\Visual-Search-Deep-Embeddings/Nikhil"
+outpath = ''
 
 torch.save({
     'emb_size': emb_size,

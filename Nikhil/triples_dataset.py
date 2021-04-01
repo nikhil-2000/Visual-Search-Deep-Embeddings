@@ -51,9 +51,6 @@ class ClothesDataset(Dataset):
                 self.images = images
                 print("Loaded")
 
-
-
-
     def __len__(self):
         return self.total_imgs
 
@@ -103,18 +100,118 @@ class ClothesFolder(ImageFolder):
     
     def __init__(self,image_path, n , transform=None, sample_for_negatives = 100, load_data = False):
         super(ClothesFolder, self).__init__(root=image_path, transform = transform)
+        # super().__init__(root=image_path, transform = transform,sample_for_negatives,load_data)
+    
+        self.max_images = n
+        # self.samples = sample_for_negatives
+        self.num_samples = 100
 
-images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
+        # if load_data:
+        #     # Create a dictionary of lists for each class for reverse lookup
+        #     # to generate triplets 
+        #     images= {}
+        #     for c in self.classes:
+        #         ci = self.class_to_idx[c]
+        #         images[ci] = []
+        #     # append each file in the approach dictionary element list
+        #     for s in self.samples:
+        #         images[s[1]].append(s[0])
+        #     # images[s[1]] = [self.load_and_transform(path,img_name) for img_name in os.listdir(path)]
+        #     # keep track of the sizes for random sampling
+        #     # self.total_imgs = {}
+        #     # for c in self.classes:
+        #     #     ci = self.class_to_idx[c]
+        #     #     self.total_imgs[ci] = len(images[ci])
+        #     self.total_imgs = sum(list(map(len, images.values())))
+        #     self.images = images
+        #     with open('images.p', 'wb') as fp:
+        #         pickle.dump(images, fp, protocol=pickle.HIGHEST_PROTOCOL)
+        self.images = {}
+        if load_data:
+            for dir in self.classes:
+                class_index = self.class_to_idx[dir]
+                self.images[class_index] = []
+            for s in self.samples:
+                self.images[s[1]].append(s[0])
+            self.classdictsize = {}
+            for c in self.classes:
+                ci = self.class_to_idx[c]
+                self.classdictsize[ci] = len(self.images[ci])    
+
+        for k,v in self.images.items():
+            print(k,v)
+            break
+        else:
+            with open('images.p', 'rb') as fp:
+                self.images = pickle.load(fp)
+                self.total_imgs = sum(list(map(len, self.images.values())))
+                # self.total_imgs = {}
+                # for c in self.classes:
+                #     ci = self.class_to_idx[c]
+                #     self.total_imgs[ci] = len(images[ci])
+                print("Loaded")     
+    
+    # def __len__(self):
+    #     return self.classdictsize
+
+    def load_and_transform(self, path, img_name):
+        img = Image.open(path + "/" + img_name)
+
+        if self.transform:
+            img =  self.transform(img)
+
+        return np.array(img)
+
+    def __getitem__(self, idx):
+        idx = np.random.randint(0, len(self.images.keys()))
+        chosen_dir,dir_imgs = list(self.images.items())[idx]
+
+        idxs = np.arange(1, len(dir_imgs))
+        a_idx, p_idx = 0, np.random.choice(idxs)
+        anchor, positive = dir_imgs[a_idx], dir_imgs[p_idx]
+
+        other_dirs = list(self.images.keys())
+        other_dirs.remove(chosen_dir)
+        negative = self.get_close_negative(anchor, other_dirs)
+
+        triple = [anchor,positive,negative]
+
+        return tuple(triple)
+
+    def get_close_negative(self, anchor, other_dirs):
+        print(anchor)
+        anchor = Image.open(anchor)
+        # w, h, _ = anchor.shape
+        w,h = anchor.width,anchor.height
+        # anchor = Image.fromarray(anchor)
+
+        negative_images_dir = random.sample(other_dirs, self.samples)
+        smallest_diff = None
+
+        for n_dir in tqdm(negative_images_dir):
+            neg_img = Image.fromarray(self.images[n_dir][0])
+
+            neg_diff = 1/(w * h) * np.sum(abs(anchor - neg_img))
+
+            if smallest_diff == None or smallest_diff > neg_diff:
+                smallest_diff = neg_diff
+                closest_negative = neg_img
+
+        return closest_negative             
+# images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
+images_path = "../../uob_image_set"
 
 
 
 if __name__ == '__main__':
 
     transform = transforms.Resize((1333,1000))
-    dataset = ClothesDataset(images_path, 500, transform = transform, sample_for_negatives= 99, load_data=False)
+    # dataset = ClothesDataset(images_path, 500, transform = transform, sample_for_negatives= 99, load_data=False)
+    dataset = ClothesFolder(images_path, 500, transform = transform, sample_for_negatives= 100, load_data=True)
     dataloader = DataLoader(dataset, batch_size = 5, shuffle=True)
 
     test = dataset[20]
+    print(test)
     anchor , positive , negative = test
 
     anchor_im = Image.fromarray(np.uint8(anchor))
