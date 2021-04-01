@@ -3,30 +3,27 @@ import numpy as np
 import torch
 from PIL import Image
 
-images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
+# images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
+images_path = "../../uob_image_set"
 
 ##Generating Triples method from this article https://towardsdatascience.com/image-similarity-using-triplet-loss-3744c0f67973
 
 
 def load_images_by_dir(n = 0):
-
-    image_directory = os.listdir(images_path)
+    image_directory = os.listdir(images_path) #get list of files and dirs in uob_image_set directory
     image_directory = image_directory if n == 0 or n >= len(image_directory) else image_directory[:n]
     images = {}
     i = 0
-
-    for dir in image_directory:
+    #  for each directory in uob_image_set, generate the path for it, then find all the images in that directory,
+    #  and insert them into a dictionary with the key as the directory name.
+    for dir in image_directory: 
         path = os.path.join(images_path,dir)
-        dir_imgs = [Image.open(path + "/" + img_name) for img_name in os.listdir(path)]
-
+        dir_imgs = [Image.open(path + "/" + img_name) for img_name in os.listdir(path)] #get the images inside the dirs stored in image_directory
         images[dir] = [np.array(img) for img in dir_imgs]
         i+= 1
-
         if i % 100 == 0:
             print(i , "/ ", n)
-
-
-    return images
+    return images 
 
 def create_triples(images):
     triples = []
@@ -49,7 +46,7 @@ def create_triples(images):
     return triples
 
 # n = 1500 all images
-n = 1500
+n = 100
 
 imgs = load_images_by_dir(n)
 triples = create_triples(imgs)
