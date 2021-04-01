@@ -1,3 +1,7 @@
 /.idea/
 /env/
 *.npy
+.DS_Store
+.vscode
+*.p
+
