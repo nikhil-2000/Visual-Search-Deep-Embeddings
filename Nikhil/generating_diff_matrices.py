@@ -10,7 +10,7 @@ from tqdm import tqdm
 h,w = 134,100
 # h,w = 1333, 1000
 transform = transforms.Resize((h,w))
-images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
+images_path = '../../uob_image_set'
 
 def get_fft(img):
 
@@ -180,3 +180,4 @@ def show_example():
     showImages(images_with_median_col, h = chosen_img.height * 2)
 
 generate_matrices()
+
