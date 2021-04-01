@@ -105,6 +105,8 @@ class ClothesFolder(ImageFolder):
         self.max_images = n
         # self.samples = sample_for_negatives
         self.num_samples = 100
+        self.col_diff = np.load('col_diff.npy')
+        self.fft_diff = np.load('fft_diff.npy')
 
         # if load_data:
         #     # Create a dictionary of lists for each class for reverse lookup
@@ -138,9 +140,7 @@ class ClothesFolder(ImageFolder):
                 ci = self.class_to_idx[c]
                 self.classdictsize[ci] = len(self.images[ci])    
 
-        for k,v in self.images.items():
-            print(k,v)
-            break
+            print(self.samples[0])
         else:
             with open('images.p', 'rb') as fp:
                 self.images = pickle.load(fp)
@@ -162,21 +162,16 @@ class ClothesFolder(ImageFolder):
 
         return np.array(img)
 
-    def __getitem__(self, idx):
-        idx = np.random.randint(0, len(self.images.keys()))
-        chosen_dir,dir_imgs = list(self.images.items())[idx]
+    def __getitem__(self,index):
+        anchor_path, anchor_target = self.samples[index]
+        pos_images = [i for i in self.images[anchor_target] if i != anchor_path]
+        pos_path = random.choice(pos_images)
+        #find our class
+        #from our class, find other classes which are similar based on fft of the first image in the class
+        #return a list of x classes and for each class, choose a random image in the class as a negative
+        print(pos_path)
 
-        idxs = np.arange(1, len(dir_imgs))
-        a_idx, p_idx = 0, np.random.choice(idxs)
-        anchor, positive = dir_imgs[a_idx], dir_imgs[p_idx]
 
-        other_dirs = list(self.images.keys())
-        other_dirs.remove(chosen_dir)
-        negative = self.get_close_negative(anchor, other_dirs)
-
-        triple = [anchor,positive,negative]
-
-        return tuple(triple)
 
     def get_close_negative(self, anchor, other_dirs):
         print(anchor)
@@ -197,9 +192,11 @@ class ClothesFolder(ImageFolder):
                 smallest_diff = neg_diff
                 closest_negative = neg_img
 
-        return closest_negative             
+        return closest_negative    
+                 
 # images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
 images_path = "../../uob_image_set"
+single_view_path = "../../uob_image_set_0"
 
 
 
