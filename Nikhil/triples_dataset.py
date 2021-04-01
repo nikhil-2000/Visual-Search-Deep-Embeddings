@@ -105,8 +105,10 @@ class ClothesFolder(ImageFolder):
         self.max_images = n
         # self.samples = sample_for_negatives
         self.num_samples = 100
-        self.col_diff = np.load('col_diff.npy')
-        self.fft_diff = np.load('fft_diff.npy')
+        self.col_diff = np.load('col_diff.npy',allow_pickle=True).item()
+        self.fft_diff = np.load('fft_diff.npy',allow_pickle=True).item()
+        # print(self.fft_diff.keys())
+        # print(self.classes)
 
         # if load_data:
         #     # Create a dictionary of lists for each class for reverse lookup
@@ -140,7 +142,7 @@ class ClothesFolder(ImageFolder):
                 ci = self.class_to_idx[c]
                 self.classdictsize[ci] = len(self.images[ci])    
 
-            print(self.samples[0])
+            # print(self.samples[0])
         else:
             with open('images.p', 'rb') as fp:
                 self.images = pickle.load(fp)
@@ -166,15 +168,28 @@ class ClothesFolder(ImageFolder):
         anchor_path, anchor_target = self.samples[index]
         pos_images = [i for i in self.images[anchor_target] if i != anchor_path]
         pos_path = random.choice(pos_images)
+        anchor_class = self.classes[anchor_target]
+        #to do next:weight closer images higher in random choice 
+        neg_dir = random.choice(self.get_closest(anchor_class,3))[0]
+        neg_images = [i for i in self.images[self.class_to_idx[neg_dir]] if i != anchor_path]
+        neg_path = random.choice(neg_images)
+        print(anchor_path)
+        print(pos_path)
+        print(neg_path)
         #find our class
         #from our class, find other classes which are similar based on fft of the first image in the class
         #return a list of x classes and for each class, choose a random image in the class as a negative
-        print(pos_path)
+        # print(pos_path)
+        return tuple([anchor_path,pos_path,neg_path])
 
-
+    def get_closest(self,class_name, k):
+        images = np.array(self.images)
+        row = list(self.fft_diff[class_name].items())
+        k_smallest_idx = sorted(row,key=lambda x: x[1])[1:k+1]
+        return k_smallest_idx
 
     def get_close_negative(self, anchor, other_dirs):
-        print(anchor)
+        # print(anchor)
         anchor = Image.open(anchor)
         # w, h, _ = anchor.shape
         w,h = anchor.width,anchor.height
@@ -206,18 +221,21 @@ if __name__ == '__main__':
     # dataset = ClothesDataset(images_path, 500, transform = transform, sample_for_negatives= 99, load_data=False)
     dataset = ClothesFolder(images_path, 500, transform = transform, sample_for_negatives= 100, load_data=True)
     dataloader = DataLoader(dataset, batch_size = 5, shuffle=True)
-
-    test = dataset[20]
-    print(test)
+    i = random.randint(0,1500)
+    test = dataset[i]
+    # print(test)
     anchor , positive , negative = test
 
-    anchor_im = Image.fromarray(np.uint8(anchor))
-    postive_im = Image.fromarray(np.uint8(positive))
-    negative_im = Image.fromarray(np.uint8(negative))
+    # anchor_im = Image.fromarray(np.uint8(anchor))
+    # postive_im = Image.fromarray(np.uint8(positive))
+    # negative_im = Image.fromarray(np.uint8(negative))
+    anchor_im = Image.open(anchor)
+    positive_im = Image.open(positive)
+    negative_im = Image.open(negative)
 
-    dst = Image.new('RGB', (anchor_im.width + postive_im.width + negative_im.width, anchor_im.height))
+    dst = Image.new('RGB', (anchor_im.width + positive_im.width + negative_im.width, anchor_im.height))
     dst.paste(anchor_im, (0, 0))
-    dst.paste(postive_im, (anchor_im.width, 0))
-    dst.paste(negative_im, (anchor_im.width + postive_im.width, 0))
+    dst.paste(positive_im, (anchor_im.width, 0))
+    dst.paste(negative_im, (anchor_im.width + positive_im.width, 0))
     dst.show()
 
