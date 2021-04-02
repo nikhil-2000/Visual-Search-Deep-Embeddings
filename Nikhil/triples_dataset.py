@@ -98,15 +98,15 @@ class ClothesDataset(Dataset):
 
 class ClothesFolder(ImageFolder):
     
-    def __init__(self,image_path, n , transform=None, sample_for_negatives = 100, load_data = False):
+    def __init__(self,image_path, n , transform=None, load_data = False):
         super(ClothesFolder, self).__init__(root=image_path, transform = transform)
         # super().__init__(root=image_path, transform = transform,sample_for_negatives,load_data)
     
         self.max_images = n
         # self.samples = sample_for_negatives
-        self.num_samples = 100
         self.col_diff = np.load('col_diff.npy',allow_pickle=True).item()
         self.fft_diff = np.load('fft_diff.npy',allow_pickle=True).item()
+        self.error_diff = np.load('error_diff.npy',allow_pickle=True).item()
         # print(self.fft_diff.keys())
         # print(self.classes)
 
@@ -170,7 +170,7 @@ class ClothesFolder(ImageFolder):
         pos_path = random.choice(pos_images)
         anchor_class = self.classes[anchor_target]
         #to do next:weight closer images higher in random choice 
-        neg_dir = random.choice(self.get_closest(anchor_class,3))[0]
+        neg_dir = random.choice(self.get_closest(anchor_class,1))[0]
         neg_images = [i for i in self.images[self.class_to_idx[neg_dir]] if i != anchor_path]
         neg_path = random.choice(neg_images)
         print(anchor_path)
@@ -183,31 +183,10 @@ class ClothesFolder(ImageFolder):
         return tuple([anchor_path,pos_path,neg_path])
 
     def get_closest(self,class_name, k):
-        images = np.array(self.images)
-        row = list(self.fft_diff[class_name].items())
+        row = list(self.error_diff[class_name].items())
         k_smallest_idx = sorted(row,key=lambda x: x[1])[1:k+1]
         return k_smallest_idx
 
-    def get_close_negative(self, anchor, other_dirs):
-        # print(anchor)
-        anchor = Image.open(anchor)
-        # w, h, _ = anchor.shape
-        w,h = anchor.width,anchor.height
-        # anchor = Image.fromarray(anchor)
-
-        negative_images_dir = random.sample(other_dirs, self.samples)
-        smallest_diff = None
-
-        for n_dir in tqdm(negative_images_dir):
-            neg_img = Image.fromarray(self.images[n_dir][0])
-
-            neg_diff = 1/(w * h) * np.sum(abs(anchor - neg_img))
-
-            if smallest_diff == None or smallest_diff > neg_diff:
-                smallest_diff = neg_diff
-                closest_negative = neg_img
-
-        return closest_negative    
                  
 # images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
 images_path = "../../uob_image_set"
@@ -219,7 +198,7 @@ if __name__ == '__main__':
 
     transform = transforms.Resize((1333,1000))
     # dataset = ClothesDataset(images_path, 500, transform = transform, sample_for_negatives= 99, load_data=False)
-    dataset = ClothesFolder(images_path, 500, transform = transform, sample_for_negatives= 100, load_data=True)
+    dataset = ClothesFolder(images_path, 500, transform = transform, load_data=True)
     dataloader = DataLoader(dataset, batch_size = 5, shuffle=True)
     i = random.randint(0,1500)
     test = dataset[i]

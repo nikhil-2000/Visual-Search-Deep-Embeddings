@@ -35,14 +35,16 @@ def get_images():
     print()
     print("Transforming Images")
     imgs = [transform(i) for i in tqdm(imgs)]
+    print()
     print("LOADED")
     return imgs,chosen
 
 def get_fourier_matrix(images, image_names):
     print("Calculating fft for images...")
-    fft_images = [get_fft(i) for i in tqdm(images)]
+    fft_images = [get_fft(i) for i in images]
     n = len(images)
     fft_diff = dict([(name, {}) for name in image_names])
+    matrix = np.zeros((n,n))
 
     print()
     print("Calculating Diffs...")
@@ -59,8 +61,13 @@ def get_fourier_matrix(images, image_names):
                 diff = np.sum(abs(fft_1 - fft_2))
                 fft_diff[fft_1_name][fft_2_name] = diff
                 fft_diff[fft_2_name][fft_1_name] = diff
+                matrix[i][j] = diff
+                matrix[j][i] = diff
 
-    return fft_diff
+    fft_min, fft_max, mean = get_measures(matrix)
+
+    transformed = (matrix - fft_min) / (fft_max - fft_min)
+    return fft_diff, transformed
 
 
 
@@ -83,9 +90,10 @@ def get_col(image):
 
 def get_colour_matrix(images, image_names):
     print("Getting Colours...")
-    col_images = [get_col(i) for i in tqdm(images)]
+    col_images = [get_col(i) for i in images]
     n = len(images)
     col_diff = dict([(name, {}) for name in image_names])
+    matrix = np.zeros((n, n))
 
     print()
     print("Calculating Diffs...")
@@ -94,16 +102,19 @@ def get_colour_matrix(images, image_names):
 
             if i != j:
                 col_1 = np.array(col_images[i])
-                col_1_name = image_names[i]
                 col_2 = np.array(col_images[j])
-                col_2_name = image_names[j]
+                col_1_name, col_2_name = image_names[i] , image_names[j]
 
 
                 diff = np.sum(abs(col_1 - col_2))
-                col_diff[col_1_name][col_2_name] = diff
-                col_diff[col_2_name][col_1_name] = diff
+                col_diff[col_1_name][col_2_name] = col_diff[col_2_name][col_1_name] = diff
+                matrix[i][j] = matrix[j][i] = diff
 
-    return col_diff
+    col_min, col_max, mean = get_measures(matrix)
+
+    transformed = (matrix - col_min) / (col_max - col_min)
+
+    return col_diff, transformed
 
 def get_measures(w_matrix):
     w_matrix = w_matrix.flatten()
@@ -112,35 +123,51 @@ def get_measures(w_matrix):
     min_w = np.amin(above_zero)
     max_w = np.amax(above_zero)
     average = np.mean(above_zero)
-    # variance = np.var(above_zero)
     measures = [min_w, max_w, average]
     return measures
 
 def get_error_matrix(fft_diff_matrix, col_diff_matrix):
-    fft_min, fft_max, fft_mean = get_measures(fft_diff_matrix)
-    col_min, col_max, col_mean = get_measures(col_diff_matrix)
-    transformed_fft = (fft_diff_matrix - fft_min) / (fft_max - fft_min)
-    transformed_col = (col_diff_matrix - col_min) / (col_max - col_min)
-    col_measures = get_measures(transformed_col)
-    fft_measures = get_measures(transformed_fft)
+    col_measures = get_measures(fft_diff_matrix)
+    fft_measures = get_measures(col_diff_matrix)
     scaler =  2 * col_measures[2] / fft_measures[2]
-    error_matrix =  scaler * transformed_fft + transformed_col
+    error_matrix =  scaler * fft_diff_matrix + col_diff_matrix
     return error_matrix
+
+def convert_to_dict(matrix, names):
+    n = len(names)
+    diff_dict = dict([(name, {}) for name in names])
+    for i in tqdm(range(0, n)):
+        for j in range(0, i):
+
+            if i != j:
+
+                name_1, name_2 = names[i], names[j]
+                diff_dict[name_1][name_2] = matrix[i][j]
+                diff_dict[name_2][name_1] = matrix[i][j]
+
+    return diff_dict
+
 
 def generate_matrices():
     images, image_names = get_images()
-    fft_diff_matrix = get_fourier_matrix(images, image_names)
-    col_diff_matrix = get_colour_matrix(images, image_names)
+    fft_diff_dict, fft_matrix = get_fourier_matrix(images, image_names)
+    col_diff_dict, col_matrix = get_colour_matrix(images, image_names)
 
-    np.save("fft_diff.npy", fft_diff_matrix)
-    np.save("col_diff.npy", col_diff_matrix)
+    np.save("fft_diff.npy", fft_diff_dict)
+    np.save("col_diff.npy", col_diff_dict)
+
+    error_matrix = get_error_matrix(fft_matrix, col_matrix)
+    error_dict = convert_to_dict(error_matrix, image_names)
+
+    np.save("error_diff.npy", error_dict)
 
 
-def get_closest(images, fft_diff, idx, k):
-    images = np.array(images)
-    row = fft_diff[idx]
-    k_smallest_idx = np.argsort(row)[1:k+1]
-    return images[k_smallest_idx]
+def get_closest(image_names, error_diff, idx, k):
+    class_name = image_names[idx]
+    row = list(error_diff[class_name].items())
+    k_smallest_idx = sorted(row, key=lambda x: x[1])[1:k + 1]
+    return k_smallest_idx
+
 
 def add_colour_below(images):
     joint_images = []
@@ -156,6 +183,15 @@ def add_colour_below(images):
 
     return joint_images
 
+def convert_names_to_images(images,image_names, closest):
+    closest_images = []
+    names = [i[0] for i in closest]
+    for name in names:
+        img_idx = image_names.index(name)
+        closest_images.append(images[img_idx])
+
+    return closest_images
+
 def showImages(images, h = h):
 
     dst = Image.new('RGB', (len(images) * w, h))
@@ -167,16 +203,17 @@ def showImages(images, h = h):
 
     dst.show()
 
+def show_example(n = 1):
+    images, image_names = get_images()
+    error_diff = np.load("error_diff.npy", allow_pickle = True).item()
 
-def show_example():
-    images = get_images()
-    fft_diff = np.load("fft_diff.npy")
-    col_diff = np.load("col_diff.npy")
-    error_matrix = get_error_matrix(fft_diff, col_diff)
-    idx = random.randint(0, 1500)
-    chosen_img = images[idx]
-    closest = get_closest(images, error_matrix, idx, 10)
-    images_with_median_col = add_colour_below([chosen_img] + list(closest))
-    showImages(images_with_median_col, h = chosen_img.height * 2)
+    for i in range(n):
+        idx = random.randint(0, 1500)
+        chosen_img = images[idx]
+        closest = get_closest(image_names, error_diff, idx, 10)
+        closest_images = convert_names_to_images(images,image_names, closest)
+        images_with_median_col = add_colour_below([chosen_img] + closest_images)
+        showImages(images_with_median_col, h = chosen_img.height * 2)
 
-generate_matrices()
+# generate_matrices()
+show_example(n = 5)
