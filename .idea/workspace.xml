@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AnalysisUIOptions">
+    <option name="SCOPE_TYPE" value="3" />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="7cfcb58a-2e85-42f3-bdd4-a42515f706b5" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Nikhil/generating_diff_matrices.py" beforeDir="false" afterPath="$PROJECT_DIR$/Nikhil/generating_diff_matrices.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Nikhil/triples_dataset.py" beforeDir="false" afterPath="$PROJECT_DIR$/Nikhil/triples_dataset.py" afterDir="false" />
@@ -35,6 +37,7 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../triplet_loss_pytorch" />
     <property name="nodejs_package_manager_path" value="npm" />
+    <property name="run.code.analysis.last.selected.profile" value="aDefault" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RunManager" selected="Python.triples_dataset">
@@ -181,7 +184,10 @@
       <workItem from="1617105528758" duration="4163000" />
       <workItem from="1617228719445" duration="3547000" />
       <workItem from="1617290939236" duration="3061000" />
-      <workItem from="1617318881625" duration="2792000" />
+      <workItem from="1617318881625" duration="2898000" />
+      <workItem from="1617398380481" duration="69000" />
+      <workItem from="1617633789714" duration="16066000" />
+      <workItem from="1617657108289" duration="2417000" />
     </task>
     <servers />
   </component>
@@ -201,46 +207,50 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="500" y="160" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1536.824@0.0.1536.824" timestamp="1617053129965" />
-    <state x="525" y="120" key="#xdebugger.evaluate" timestamp="1616881841441">
+    <state x="884" y="239" key="#xdebugger.evaluate" timestamp="1617654828907">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="525" y="120" key="#xdebugger.evaluate/0.0.1536.824@0.0.1536.824" timestamp="1616881841441" />
+    <state x="884" y="239" key="#xdebugger.evaluate/0.0.1536.824@0.0.1536.824" timestamp="1617654828907" />
+    <state x="518" y="268" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1617659024784">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state x="518" y="268" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.0.1536.824@0.0.1536.824" timestamp="1617659024784" />
     <state x="550" y="168" key="FileChooserDialogImpl" timestamp="1617050718363">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="550" y="168" key="FileChooserDialogImpl/0.0.1536.824@0.0.1536.824" timestamp="1617050718363" />
-    <state width="746" height="184" key="GridCell.Tab.0.bottom" timestamp="1617321640915">
+    <state width="1493" height="184" key="GridCell.Tab.0.bottom" timestamp="1617659544774">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="746" height="184" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1617321640915" />
-    <state width="746" height="184" key="GridCell.Tab.0.center" timestamp="1617321640915">
+    <state width="1493" height="184" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1617659544774" />
+    <state width="1493" height="184" key="GridCell.Tab.0.center" timestamp="1617659544774">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="746" height="184" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1617321640915" />
-    <state width="746" height="184" key="GridCell.Tab.0.left" timestamp="1617321640915">
+    <state width="1493" height="184" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1617659544774" />
+    <state width="1493" height="184" key="GridCell.Tab.0.left" timestamp="1617659544773">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="746" height="184" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1617321640915" />
-    <state width="746" height="184" key="GridCell.Tab.0.right" timestamp="1617321640915">
+    <state width="1493" height="184" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1617659544773" />
+    <state width="1493" height="184" key="GridCell.Tab.0.right" timestamp="1617659544774">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="746" height="184" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1617321640915" />
-    <state width="1493" height="262" key="GridCell.Tab.1.bottom" timestamp="1617054674070">
+    <state width="1493" height="184" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1617659544774" />
+    <state width="746" height="262" key="GridCell.Tab.1.bottom" timestamp="1617657085077">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1493" height="262" key="GridCell.Tab.1.bottom/0.0.1536.824@0.0.1536.824" timestamp="1617054674070" />
-    <state width="1493" height="262" key="GridCell.Tab.1.center" timestamp="1617054674070">
+    <state width="746" height="262" key="GridCell.Tab.1.bottom/0.0.1536.824@0.0.1536.824" timestamp="1617657085077" />
+    <state width="746" height="262" key="GridCell.Tab.1.center" timestamp="1617657085076">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1493" height="262" key="GridCell.Tab.1.center/0.0.1536.824@0.0.1536.824" timestamp="1617054674070" />
-    <state width="1493" height="262" key="GridCell.Tab.1.left" timestamp="1617054674070">
+    <state width="746" height="262" key="GridCell.Tab.1.center/0.0.1536.824@0.0.1536.824" timestamp="1617657085076" />
+    <state width="746" height="262" key="GridCell.Tab.1.left" timestamp="1617657085076">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1493" height="262" key="GridCell.Tab.1.left/0.0.1536.824@0.0.1536.824" timestamp="1617054674070" />
-    <state width="1493" height="262" key="GridCell.Tab.1.right" timestamp="1617054674070">
+    <state width="746" height="262" key="GridCell.Tab.1.left/0.0.1536.824@0.0.1536.824" timestamp="1617657085076" />
+    <state width="746" height="262" key="GridCell.Tab.1.right" timestamp="1617657085077">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1493" height="262" key="GridCell.Tab.1.right/0.0.1536.824@0.0.1536.824" timestamp="1617054674070" />
+    <state width="746" height="262" key="GridCell.Tab.1.right/0.0.1536.824@0.0.1536.824" timestamp="1617657085077" />
     <state x="149" y="65" key="MergeDialog" timestamp="1617294809384">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
@@ -253,22 +263,34 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="279" y="58" key="SettingsEditor/0.0.1536.824@0.0.1536.824" timestamp="1616697134889" />
+    <state width="392" height="418" key="XDebugger.FullValuePopup" timestamp="1617654809918">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state width="392" height="418" key="XDebugger.FullValuePopup/0.0.1536.824@0.0.1536.824" timestamp="1617654809918" />
+    <state x="94" y="94" width="1349" height="637" key="com.intellij.history.integration.ui.views.SelectionHistoryDialog" timestamp="1617654630722">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state x="94" y="94" width="1349" height="637" key="com.intellij.history.integration.ui.views.SelectionHistoryDialog/0.0.1536.824@0.0.1536.824" timestamp="1617654630722" />
+    <state x="318" y="142" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2" timestamp="1617646984938">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state x="318" y="142" key="com.intellij.xdebugger.impl.breakpoints.ui.BreakpointsDialogFactory$2/0.0.1536.824@0.0.1536.824" timestamp="1617646984938" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Nikhil/create_triples.py</url>
-          <line>5</line>
-          <option name="timeStamp" value="2" />
+          <url>file://$PROJECT_DIR$/Nikhil/generating_diff_matrices.py</url>
+          <line>236</line>
+          <option name="timeStamp" value="20" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$create_triples.coverage" NAME="create_triples Coverage Results" MODIFIED="1616698471769" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
-    <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$generating_diff_matrices.coverage" NAME="generating_diff_matrices Coverage Results" MODIFIED="1617321298665" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
-    <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$triples_dataset.coverage" NAME="triples_dataset Coverage Results" MODIFIED="1617321557503" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
+    <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$generating_diff_matrices.coverage" NAME="generating_diff_matrices Coverage Results" MODIFIED="1617659389178" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
+    <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$triples_dataset.coverage" NAME="triples_dataset Coverage Results" MODIFIED="1617659826365" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
     <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$similairImages.coverage" NAME="similairImages Coverage Results" MODIFIED="1617050654761" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
     <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$train_net.coverage" NAME="train_net Coverage Results" MODIFIED="1617025449406" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
   </component>
