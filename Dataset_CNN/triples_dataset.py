@@ -11,13 +11,11 @@ from torchvision.datasets import ImageFolder
 
 class ClothesFolder(ImageFolder):
     
-    def __init__(self,image_path, n , transform=None):
-        super(ClothesFolder, self).__init__(root=image_path, transform = transform)
+    def __init__(self,root , transform=None):
+        super(ClothesFolder, self).__init__(root=root, transform = transform)
         # super().__init__(root=image_path, transform = transform,sample_for_negatives,load_data)
-    
-        self.max_images = n
 
-        self.error_diff = np.load('error_diff.npy',allow_pickle=True).item()
+        self.error_diff = np.load('../Nikhil/error_diff.npy', allow_pickle=True).item()
 
         self.images = {}
         for dir in self.classes:
@@ -44,22 +42,32 @@ class ClothesFolder(ImageFolder):
         pos_path = random.choice(pos_images)
         anchor_class = self.classes[anchor_target]
         #to do next:weight closer images higher in random choice 
-        neg_dir = random.choice(self.get_closest(anchor_class,1))[0]
+        neg_dir = random.choice(self.get_closest(anchor_class,3))[0]
         neg_images = [i for i in self.images[self.class_to_idx[neg_dir]] if i != anchor_path]
         neg_path = random.choice(neg_images)
-        print(anchor_path)
-        print(pos_path)
-        print(neg_path)
         #find our class
         #from our class, find other classes which are similar based on fft of the first image in the class
         #return a list of x classes and for each class, choose a random image in the class as a negative
         # print(pos_path)
-        return tuple([anchor_path,pos_path,neg_path])
+
+        # Load the data for these samples.
+        a_sample = self.loader(anchor_path)
+        p_sample = self.loader(pos_path)
+        n_sample = self.loader(neg_path)
+
+        # apply transforms
+        if self.transform is not None:
+            a_sample = self.transform(a_sample)
+            p_sample = self.transform(p_sample)
+            n_sample = self.transform(n_sample)
+
+        # note that we do not return the label!
+        return a_sample, p_sample, n_sample
 
     def get_closest(self,class_name, k):
-        row = list(self.error_diff[class_name].items())
-        k_smallest_idx = sorted(row,key=lambda x: x[1])[1:k+1]
-        return k_smallest_idx
+            row = list(self.error_diff[class_name].items())
+            k_smallest_idx = sorted(row,key=lambda x: x[1])[1:k+1]
+            return k_smallest_idx
 
                  
 # images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
@@ -77,14 +85,8 @@ if __name__ == '__main__':
     i = random.randint(0,1500)
     test = dataset[i]
     # print(test)
-    anchor , positive , negative = test
+    anchor_im , positive_im , negative_im = test
 
-    # anchor_im = Image.fromarray(np.uint8(anchor))
-    # postive_im = Image.fromarray(np.uint8(positive))
-    # negative_im = Image.fromarray(np.uint8(negative))
-    anchor_im = Image.open(anchor)
-    positive_im = Image.open(positive)
-    negative_im = Image.open(negative)
 
     dst = Image.new('RGB', (anchor_im.width + positive_im.width + negative_im.width, anchor_im.height))
     dst.paste(anchor_im, (0, 0))
