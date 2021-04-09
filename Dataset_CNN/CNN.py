@@ -1,6 +1,6 @@
 # GLOBAL DEFINES
-T_G_WIDTH = 224
-T_G_HEIGHT = 224
+T_G_WIDTH = 100
+T_G_HEIGHT = 134
 T_G_NUMCHANNELS = 3
 T_G_SEED = 1337
 
@@ -30,8 +30,8 @@ from collections import Counter
 from triples_dataset import ClothesFolder
 
 # correct "too many files" error
-# import torch.multiprocessing
-# torch.multiprocessing.set_sharing_strategy('file_system')
+import torch.multiprocessing
+torch.multiprocessing.set_sharing_strategy('file_system')
 torch.cuda.empty_cache()
 
 np.random.seed(T_G_SEED)
@@ -71,7 +71,7 @@ class EmbeddingNetwork(nn.Module):
     def __init__(self, emb_dim = 128, is_pretrained=True, freeze_params=True):
         super(EmbeddingNetwork, self).__init__()
 
-        self.backbone = models.resnet18(pretrained=is_pretrained)
+        self.backbone = models.resnet50(pretrained=is_pretrained)
         set_parameter_requires_grad(self.backbone, freeze_params)
 
         # replace the last classification layer with an embedding layer.
@@ -287,4 +287,3 @@ def main(argv):
 # Main Driver
 if __name__ == "__main__":
     main(sys.argv[1:])
-

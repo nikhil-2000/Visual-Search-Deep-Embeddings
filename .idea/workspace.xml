@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="7cfcb58a-2e85-42f3-bdd4-a42515f706b5" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dataset_CNN/CNN.py" beforeDir="false" afterPath="$PROJECT_DIR$/Dataset_CNN/CNN.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Dataset_CNN/visualise_embeddings.py" beforeDir="false" afterPath="$PROJECT_DIR$/Dataset_CNN/visualise_embeddings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Richard_Pablo_PCA.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/Richard_Pablo_PCA.ipynb" afterDir="false" />
     </list>
@@ -62,7 +63,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Dataset_CNN/CNN.py" />
-      <option name="PARAMETERS" value="-extract model_weights.pth ../../uob_image_set txt 1" />
+      <option name="PARAMETERS" value="-extract model_weights.pth ../../uob_image_set triplet 2" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -83,8 +84,8 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Dataset + CNN/CNN.py" />
-      <option name="PARAMETERS" value="learn ../../uob_image_set 128 32 3 model_weights.pt" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Dataset_CNN/CNN.py" />
+      <option name="PARAMETERS" value="learn ../../uob_image_set 1000 32 10 model_weights" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -230,7 +231,9 @@
       <workItem from="1617883099741" duration="313000" />
       <workItem from="1617884250711" duration="7067000" />
       <workItem from="1617900372928" duration="9280000" />
-      <workItem from="1617915406612" duration="1317000" />
+      <workItem from="1617915406612" duration="1947000" />
+      <workItem from="1617963631061" duration="636000" />
+      <workItem from="1617967851528" duration="3045000" />
     </task>
     <servers />
   </component>
@@ -238,18 +241,18 @@
     <option name="version" value="2" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="225" y="68" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1617913006222">
+    <state x="225" y="68" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1617970135217">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="225" y="68" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1536.824@0.0.1536.824" timestamp="1617913006222" />
+    <state x="225" y="68" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1536.824@0.0.1536.824" timestamp="1617970135217" />
     <state x="526" y="215" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1617911898335">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="526" y="215" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1536.824@0.0.1536.824" timestamp="1617911898335" />
-    <state x="500" y="160" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1617053129965">
+    <state x="500" y="160" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1617969790307">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="500" y="160" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1536.824@0.0.1536.824" timestamp="1617053129965" />
+    <state x="500" y="160" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1536.824@0.0.1536.824" timestamp="1617969790307" />
     <state x="884" y="239" key="#xdebugger.evaluate" timestamp="1617654828907">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
@@ -258,42 +261,46 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="518" y="268" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.0.1536.824@0.0.1536.824" timestamp="1617659024784" />
+    <state x="94" y="94" width="1349" height="637" key="DiffContextDialog" timestamp="1617924443611">
+      <screen x="0" y="0" width="1536" height="824" />
+    </state>
+    <state x="94" y="94" width="1349" height="637" key="DiffContextDialog/0.0.1536.824@0.0.1536.824" timestamp="1617924443611" />
     <state x="550" y="168" key="FileChooserDialogImpl" timestamp="1617913002801">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="550" y="168" key="FileChooserDialogImpl/0.0.1536.824@0.0.1536.824" timestamp="1617913002801" />
-    <state width="1493" height="184" key="GridCell.Tab.0.bottom" timestamp="1617916682137">
+    <state width="1493" height="184" key="GridCell.Tab.0.bottom" timestamp="1617974636996">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1493" height="184" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1617916682137" />
-    <state width="1493" height="184" key="GridCell.Tab.0.center" timestamp="1617916682137">
+    <state width="1493" height="184" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1617974636996" />
+    <state width="1493" height="184" key="GridCell.Tab.0.center" timestamp="1617974636995">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1493" height="184" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1617916682137" />
-    <state width="1493" height="184" key="GridCell.Tab.0.left" timestamp="1617916682137">
+    <state width="1493" height="184" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1617974636995" />
+    <state width="1493" height="184" key="GridCell.Tab.0.left" timestamp="1617974636995">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1493" height="184" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1617916682137" />
-    <state width="1493" height="184" key="GridCell.Tab.0.right" timestamp="1617916682137">
+    <state width="1493" height="184" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1617974636995" />
+    <state width="1493" height="184" key="GridCell.Tab.0.right" timestamp="1617974636996">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1493" height="184" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1617916682137" />
-    <state width="1493" height="262" key="GridCell.Tab.1.bottom" timestamp="1617915026284">
+    <state width="1493" height="184" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1617974636996" />
+    <state width="1493" height="262" key="GridCell.Tab.1.bottom" timestamp="1617969675164">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1493" height="262" key="GridCell.Tab.1.bottom/0.0.1536.824@0.0.1536.824" timestamp="1617915026284" />
-    <state width="1493" height="262" key="GridCell.Tab.1.center" timestamp="1617915026283">
+    <state width="1493" height="262" key="GridCell.Tab.1.bottom/0.0.1536.824@0.0.1536.824" timestamp="1617969675164" />
+    <state width="1493" height="262" key="GridCell.Tab.1.center" timestamp="1617969675163">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1493" height="262" key="GridCell.Tab.1.center/0.0.1536.824@0.0.1536.824" timestamp="1617915026283" />
-    <state width="1493" height="262" key="GridCell.Tab.1.left" timestamp="1617915026283">
+    <state width="1493" height="262" key="GridCell.Tab.1.center/0.0.1536.824@0.0.1536.824" timestamp="1617969675163" />
+    <state width="1493" height="262" key="GridCell.Tab.1.left" timestamp="1617969675163">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1493" height="262" key="GridCell.Tab.1.left/0.0.1536.824@0.0.1536.824" timestamp="1617915026283" />
-    <state width="1493" height="262" key="GridCell.Tab.1.right" timestamp="1617915026283">
+    <state width="1493" height="262" key="GridCell.Tab.1.left/0.0.1536.824@0.0.1536.824" timestamp="1617969675163" />
+    <state width="1493" height="262" key="GridCell.Tab.1.right" timestamp="1617969675164">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1493" height="262" key="GridCell.Tab.1.right/0.0.1536.824@0.0.1536.824" timestamp="1617915026283" />
+    <state width="1493" height="262" key="GridCell.Tab.1.right/0.0.1536.824@0.0.1536.824" timestamp="1617969675164" />
     <state x="149" y="65" key="MergeDialog" timestamp="1617294809384">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
@@ -346,6 +353,11 @@
           <line>148</line>
           <option name="timeStamp" value="25" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Dataset_CNN/CNN.py</url>
+          <line>190</line>
+          <option name="timeStamp" value="26" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
@@ -355,9 +367,10 @@
     <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$triples_dataset.coverage" NAME="triples_dataset Coverage Results" MODIFIED="1617901059394" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
     <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$similairImages.coverage" NAME="similairImages Coverage Results" MODIFIED="1617050654761" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
     <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$train_net.coverage" NAME="train_net Coverage Results" MODIFIED="1617025449406" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
+    <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$CNN___Learn.coverage" NAME="CNN - Learn Coverage Results" MODIFIED="1617970139648" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
     <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$CNN.coverage" NAME="CNN Coverage Results" MODIFIED="1617910573788" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
-    <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$CNN___Extract.coverage" NAME="CNN - Extract Coverage Results" MODIFIED="1617913075823" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Dataset_CNN" />
-    <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$visualise_embeddings.coverage" NAME="visualise_embeddings Coverage Results" MODIFIED="1617916682130" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Dataset_CNN" />
+    <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$CNN___Extract.coverage" NAME="CNN - Extract Coverage Results" MODIFIED="1617973786608" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Dataset_CNN" />
+    <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$visualise_embeddings.coverage" NAME="visualise_embeddings Coverage Results" MODIFIED="1617974636985" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Dataset_CNN" />
     <SUITE FILE_PATH="coverage/Visual_Search_Deep_Embeddings$labelling_images.coverage" NAME="labelling_images Coverage Results" MODIFIED="1617894581910" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Nikhil" />
   </component>
 </project>

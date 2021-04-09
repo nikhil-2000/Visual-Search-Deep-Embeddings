@@ -6,22 +6,22 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import random
 import torch.tensor as tensor
-n = 20
+n = 500
 first_n = lambda x: x[:n]
 
 
-embeddings = first_n(np.loadtxt("txt_scores.txt"))
-with open('txt_files.txt') as f:
+embeddings = first_n(np.loadtxt("triplet_scores.txt"))
+with open('triplet_files.txt') as f:
     files = f.read().split("\n")
 
-with open('txt_labels.txt') as f:
+with open('triplet_labels.txt') as f:
     labels = f.read().split("\n")
 
 labels = [eval(lbl) for lbl in labels[:-1]]
 
 files = first_n(files)
 labels = first_n(labels)
-num_img_list = [0 for i in range(1500)]
+num_img_list = [0 for i in labels]
 for lbl in labels:
     num_img_list[int(lbl)] += 1
 
@@ -45,6 +45,15 @@ for n in num_img_list:
     r = lambda: random.randint(0,255)
     random_color = '#%02X%02X%02X' % (r(),r(),r())
     plt.plot(pca_df.PC1[img_counter:img_counter + n], pca_df.PC2[img_counter:img_counter + n],pca_df.PC3[img_counter:img_counter + n] ,'o',color=random_color)
+    # plt.plot(pca_df.PC1[img_counter:img_counter + n], pca_df.PC2[img_counter:img_counter + n],'o',color=random_color)
     img_counter += n
 
 plt.show()
+
+"""
+For each folder:
+    pick random pic
+    let n be number of pics in folder
+    Get n - nearest pics
+    
+"""
