@@ -16,7 +16,8 @@ class ClothesFolder(ImageFolder):
         super(ClothesFolder, self).__init__(root=root, transform = transform)
         # super().__init__(root=image_path, transform = transform,sample_for_negatives,load_data)
 
-        self.error_diff = np.load("../error_net_diff.npy", allow_pickle=True).item()
+        self.error_diff = np.load("error_net_diff.npy", allow_pickle=True).item()
+        print("Keys: ", len(self.error_diff.keys()))
 
         self.images = {}
         for dir in self.classes:
@@ -108,8 +109,6 @@ class ClothesFolder(ImageFolder):
         return [a_sample] +  neg_samples
                  
 # images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
-images_path = "../../uob_image_set_100"
-single_view_path = "../../uob_image_set_0"
 
 def show_example_triplet(triple):
     anchor_im, positive_im, negative_im = triple
@@ -133,32 +132,33 @@ def getListImages(images):
 
 def showImages(net, old):
     net_images = getListImages(net)
-    old_images = getListImages(old)
+    # old_images = getListImages(old)
+    #
+    # h,w = net_images.height , net_images.width
+    # dst = Image.new('RGB', ( w, h * 2))
+    # x = 0
+    # y = 0
+    # for i in [net_images]:
+    #     dst.paste(i, (x, y))
+    #     y += h
 
-    h,w = net_images.height , net_images.width
-    dst = Image.new('RGB', ( w, h * 2))
-    x = 0
-    y = 0
-    for i in [net_images, old_images]:
-        dst.paste(i, (x, y))
-        y += h
+    net_images.show()
 
-    dst.show()
-
+images_path = "../../uob_image_set_1000"
 
 
 if __name__ == '__main__':
 
     transform = transforms.Resize((1333//5,1000//5))
-    dataset = old.ClothesFolder(images_path, transform = transform)
+    # dataset = old.ClothesFolder(images_path, transform = transform)
     dataset_net = ClothesFolder(images_path, transform = transform)
 
 
     for i in range(5):
-        i = random.randint(0, 100)
+        i = random.randint(0, 1000)
         print(i)
         test_net = dataset_net.test_output_k_closest(i , 10)
-        test_old = dataset.output_k_closest(i,10)
-        showImages(test_net, test_old)
+        # test_old = dataset.output_k_closest(i,10)
+        showImages(test_net, [])
     # print(test)
 
