@@ -10,7 +10,7 @@ from tqdm import tqdm
 h,w = 134,100
 # h,w = 1333, 1000
 transform = transforms.Resize((h,w))
-images_path = "../../uob_image_set"
+images_path = "../../uob_image_set_100"
 
 def get_fft(img):
 
@@ -158,8 +158,8 @@ def generate_matrices(images,image_names):
     np.save("col_diff.npy", col_matrix)
 
 def generate_error_matrix():
-    fft_matrix = np.load("fft_diff.npy", allow_pickle = True).item()
-    col_matrix = np.load("col_diff.npy", allow_pickle = True).item()
+    fft_matrix = np.load("fft_diff.npy", allow_pickle = True)
+    col_matrix = np.load("col_diff.npy", allow_pickle = True)
 
     scaler = 1
     error_matrix = scaler * fft_matrix + col_matrix
@@ -210,10 +210,10 @@ def showImages(images):
     dst.show()
 
 def show_example(images,image_names,n = 1):
-    error_diff = np.load("error_diff.npy", allow_pickle = True).item()
+    error_diff = np.load("../error_net_diff.npy", allow_pickle = True).item()
 
     for i in range(n):
-        idx = random.randint(0, 1500)
+        idx = random.randint(0, 100)
         # idx = image_names.index("15049546")
         chosen_img = images[idx]
         print(image_names[idx])
@@ -227,7 +227,8 @@ if __name__ == '__main__':
 
     images, image_names = get_images()
     generate_matrices(images,image_names)
-    show_example(images,image_names,n = 10)
+    generate_error_matrix()
+    # show_example(images,image_names,n = 10)
 
 
     # check = ["13888239","14342457","14713205","15146351"]

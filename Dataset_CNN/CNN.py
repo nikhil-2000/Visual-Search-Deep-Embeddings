@@ -67,6 +67,15 @@ def set_parameter_requires_grad(model, feature_extracting):
         for param in model.parameters():
             param.requires_grad = False
 
+class Identity(torch.nn.Module):
+    def init(self):
+        super(Identity, self).init()
+
+    def forward(self, x):
+        return x
+
+
+
 class EmbeddingNetwork(nn.Module):
     def __init__(self, emb_dim = 128, is_pretrained=True, freeze_params=True):
         super(EmbeddingNetwork, self).__init__()
@@ -75,8 +84,9 @@ class EmbeddingNetwork(nn.Module):
         set_parameter_requires_grad(self.backbone, freeze_params)
 
         # replace the last classification layer with an embedding layer.
-        num_ftrs = self.backbone.fc.in_features
-        self.backbone.fc = nn.Linear(num_ftrs, emb_dim)
+        # num_ftrs = self.backbone.fc.in_features
+        # self.backbone.fc = nn.Linear(num_ftrs, emb_dim)
+        self.backbone.fc = Identity()
 
         # make that layer trainable
         for param in self.backbone.fc.parameters():
@@ -174,6 +184,8 @@ def learn(argv):
             optimizer.step()
 
             running_loss.append(loss.cpu().detach().numpy())
+
+        print(step)
         print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, np.mean(running_loss)))
 
     torch.save({

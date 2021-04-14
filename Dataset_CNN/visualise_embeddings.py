@@ -15,14 +15,17 @@ def load_data():
     embeddings = first_n(np.loadtxt("triplet_scores.txt"))
     with open('triplet_files.txt') as f:
         files = f.read().split("\n")
+        if "" in files: files.remove("")
 
     with open('triplet_labels.txt') as f:
         labels = f.read().split("\n")
+        if "" in labels: labels.remove("")
 
-    labels = [eval(lbl) for lbl in labels[:-1]]
 
-    files = first_n(files)
-    labels = first_n(labels)
+    labels = [eval(lbl) for lbl in labels]
+
+    # files = first_n(files)
+    # labels = first_n(labels)
 
     return embeddings, labels, files
 
@@ -33,7 +36,7 @@ def PCA_Output(embeddings, labels):
         num_img_list[int(lbl)] += 1
 
     num_img_list = num_img_list[:len(labels)]
-    labels = ['PC' +  str(x) for x in range(1,len(num_img_list)+1)]
+    labels = ['PC' +  str(x) for x in range(1,len(num_img_list)+2)]
 
 
 
@@ -44,15 +47,15 @@ def PCA_Output(embeddings, labels):
 
     pca_df = pd.DataFrame(pca_data, columns=labels)
     fig = plt.figure()
-    ax = plt.axes(projection="3d")
+    # ax = plt.axes(projection="3d")
 
 
     img_counter = 0
     for n in num_img_list:
         r = lambda: random.randint(0,255)
         random_color = '#%02X%02X%02X' % (r(),r(),r())
-        plt.plot(pca_df.PC1[img_counter:img_counter + n], pca_df.PC2[img_counter:img_counter + n],pca_df.PC3[img_counter:img_counter + n] ,'o',color=random_color)
-        # plt.plot(pca_df.PC1[img_counter:img_counter + n], pca_df.PC2[img_counter:img_counter + n],'o',color=random_color)
+        # plt.plot(pca_df.PC1[img_counter:img_counter + n], pca_df.PC2[img_counter:img_counter + n],pca_df.PC3[img_counter:img_counter + n] ,'o',color=random_color)
+        plt.plot(pca_df.PC1[img_counter:img_counter + n], pca_df.PC2[img_counter:img_counter + n],'o',color=random_color)
         img_counter += n
 
     plt.show()
@@ -81,6 +84,19 @@ def dist_dict(scores, files):
 
     return dist_dict
 
+
+def get_accuracy(file, dist_dict, k = 5):
+    name = file.split("\\")[-2]
+    row = list(dist_dict[file].items())
+    k_smallest_diffs = sorted(row, key=lambda x: x[1])[0:k + 1]
+    image_paths =  k_smallest_diffs
+    score = 0
+    for path,_ in image_paths:
+        if name in path:
+            score += 1
+
+    return score/ k
+
 def showImages(images):
     h,w = images[0].height, images[0].width
     dst = Image.new('RGB', (len(images) * w, h))
@@ -93,11 +109,13 @@ def showImages(images):
     dst.show()
 
 
-def show_example(files, dist_dict, k = 7):
-    file = random.choice(files)
+def show_example(files, dist_dict, k = 7, file = None):
+
+    if file is None:
+        file = random.choice(files)
 
     row = list(dist_dict[file].items())
-    k_smallest_diffs = sorted(row, key=lambda x: x[1])[1:k + 1]
+    k_smallest_diffs = sorted(row, key=lambda x: x[1])[0:k + 1]
     image_paths = [(file,0)] + k_smallest_diffs
     out = []
     imgs = []
@@ -107,10 +125,16 @@ def show_example(files, dist_dict, k = 7):
         imgs.append(img)
 
     showImages(imgs)
-    print(out)
 
 
 scores, labels, files = load_data()
 diffs = dist_dict(scores, files)
-for i in range(5): show_example(files, diffs )
-
+# for i in range(5): show_example(files, diffs )
+accuracies = []
+max_ac = 0
+best = ""
+for i in range(5):
+    file = random.choice(files)
+    ac = get_accuracy(file, diffs, 4)
+    accuracies.append(ac)
+    show_example(files, diffs, k=4, file=file)
