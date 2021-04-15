@@ -127,4 +127,5 @@ def output_labels():
 if __name__ == '__main__':
     labeler = ImageLabeler(images_path, "labelled.csv", "unlabelled.txt")
     output_labels()
-    labeler.label_n_images(n=1)
+    labeler.label_n_images(n=20)
+    
