@@ -16,28 +16,30 @@ labels = ['Accessory',
           
           'Long sleeved top',
           'Short sleeved top',
+          'Coat',
           'Dress',
           'Trouser',
           'Skirt',
           'Shorts',
           
           'Bag',
+          'Wallet/Purse',
           'Belt',
+          'Ladies pants',
           'Briefs',
-          'Coat',
           'Ear ring',
           'Glasses',
+          'Sun glasses',
+          
           'Hat',
-          'Ladies pants',
           
           'Sandal',
           'Trainer',
           'Smart shoes',
+          
           'Necklace',
-          'Sun glasses',
-          'Unknown',
-          'Wallet/Purse',
-          'Wrist wear']
+          'Wrist wear',
+          'Unknown',]
 images_path = "../../uob_image_set"
 
 
