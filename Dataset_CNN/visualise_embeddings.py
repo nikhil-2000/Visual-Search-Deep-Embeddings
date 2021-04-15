@@ -133,8 +133,16 @@ diffs = dist_dict(scores, files)
 accuracies = []
 max_ac = 0
 best = ""
-for i in range(5):
+for i in range(200):
     file = random.choice(files)
     ac = get_accuracy(file, diffs, 4)
     accuracies.append(ac)
-    show_example(files, diffs, k=4, file=file)
+
+    if ac > max_ac:
+        best = file
+        max_ac = ac
+
+print(np.mean(accuracies))
+print(best)
+print(max_ac)
+show_example(files, diffs, k=4, file=best)

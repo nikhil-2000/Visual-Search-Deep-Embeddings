@@ -154,7 +154,7 @@ if __name__ == '__main__':
     dataset_net = ClothesFolder(images_path, transform = transform)
 
 
-    for i in range(5):
+    for i in range(1):
         i = random.randint(0, 1000)
         print(i)
         test_net = dataset_net.test_output_k_closest(i , 10)
