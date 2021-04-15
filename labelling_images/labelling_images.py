@@ -13,25 +13,28 @@ import numpy as np
 from tqdm import tqdm
 
 labels = ['Accessory',
+          
+          'Long sleeved top',
+          'Short sleeved top',
+          'Dress',
+          'Trouser',
+          'Skirt',
+          'Shorts',
+          
           'Bag',
           'Belt',
           'Briefs',
           'Coat',
-          'Dress',
           'Ear ring',
           'Glasses',
           'Hat',
           'Ladies pants',
-          'Long sleeved top',
-          'Necklace',
+          
           'Sandal',
-          'Short sleeved top',
-          'Shorts',
-          'Skirt',
-          'Smart shoes',
-          'Sun glasses',
           'Trainer',
-          'Trouser',
+          'Smart shoes',
+          'Necklace',
+          'Sun glasses',
           'Unknown',
           'Wallet/Purse',
           'Wrist wear']
@@ -98,7 +101,7 @@ class ImageLabeler():
         chosen_dirs = np.random.choice(self.unlabelled_folders, n)
         for img_name in chosen_dirs:
             i = self.names.index(img_name)
-            lbl = self.label_image(i, wait_time=3000)
+            lbl = self.label_image(i, wait_time=1000)
 
             if lbl != "Unknown":  # If something other than unknown is picked
                 self.labelled_folders.append((img_name, lbl))
@@ -125,6 +128,7 @@ def output_labels():
 
 
 if __name__ == '__main__':
-    labeler = ImageLabeler(images_path, "labelled.csv", "unlabelled.txt")
-    output_labels()
-    labeler.label_n_images(n=20)
+    while True:
+        labeler = ImageLabeler(images_path, "labelled.csv", "unlabelled.txt")
+        output_labels()
+        labeler.label_n_images(n=10)
