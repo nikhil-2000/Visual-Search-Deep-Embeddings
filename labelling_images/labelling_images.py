@@ -63,6 +63,7 @@ class ImageLabeler():
     def get_images(self):
         folders = os.listdir(self.path)
         print("Loading Images...")
+        folders = [folder for folder in folders if folder.isdigit()]
         paths = [self.full_path(folder) for folder in tqdm(folders)]
 
         print("LOADED")
@@ -126,4 +127,4 @@ def output_labels():
 if __name__ == '__main__':
     labeler = ImageLabeler(images_path, "labelled.csv", "unlabelled.txt")
     output_labels()
-    labeler.label_n_images(n=1)
+    labeler.label_n_images(n=20)
