@@ -1,7 +1,6 @@
 """
 Plan:
 Read in first image of each folder with folder name
-
 Then for each image, output the image, user provides short input for label
 Store this label in dict where file name maps to label
 """
@@ -13,33 +12,28 @@ import numpy as np
 from tqdm import tqdm
 
 labels = ['Accessory',
-          
-          'Long sleeved top',
-          'Short sleeved top',
+          'Bag',
+          'Belt',
+          'Briefs',
           'Coat',
           'Dress',
-          'Trouser',
-          'Skirt',
-          'Shorts',
-          
-          'Bag',
-          'Wallet/Purse',
-          'Belt',
-          'Ladies pants',
-          'Briefs',
           'Ear ring',
           'Glasses',
-          'Sun glasses',
-          
           'Hat',
-          
-          'Sandal',
-          'Trainer',
-          'Smart shoes',
-          
+          'Ladies pants',
+          'Long sleeved top',
           'Necklace',
-          'Wrist wear',
-          'Unknown',]
+          'Sandal',
+          'Short sleeved top',
+          'Shorts',
+          'Skirt',
+          'Smart shoes',
+          'Sun glasses',
+          'Trainer',
+          'Trouser',
+          'Unknown',
+          'Wallet/Purse',
+          'Wrist wear']
 images_path = "../../uob_image_set"
 
 
@@ -103,7 +97,7 @@ class ImageLabeler():
         chosen_dirs = np.random.choice(self.unlabelled_folders, n)
         for img_name in chosen_dirs:
             i = self.names.index(img_name)
-            lbl = self.label_image(i, wait_time=1000)
+            lbl = self.label_image(i, wait_time=3000)
 
             if lbl != "Unknown":  # If something other than unknown is picked
                 self.labelled_folders.append((img_name, lbl))
@@ -130,7 +124,6 @@ def output_labels():
 
 
 if __name__ == '__main__':
-    while True:
-        labeler = ImageLabeler(images_path, "labelled.csv", "unlabelled.txt")
-        output_labels()
-        labeler.label_n_images(n=10)
+    labeler = ImageLabeler(images_path, "labelled.csv", "unlabelled.txt")
+    output_labels()
+    labeler.label_n_images(n=20)
