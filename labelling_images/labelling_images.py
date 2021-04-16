@@ -94,10 +94,10 @@ class ImageLabeler():
         if n <= 0 or n > len(self.unlabelled_folders):
             n = len(self.unlabelled_folders)
 
-        chosen_dirs = np.random.choice(self.unlabelled_folders, n)
+        chosen_dirs = np.random.choice(self.unlabelled_folders, n, replace=False)
         for img_name in chosen_dirs:
             i = self.names.index(img_name)
-            lbl = self.label_image(i, wait_time=3000)
+            lbl = self.label_image(i, wait_time=0)
 
             if lbl != "Unknown":  # If something other than unknown is picked
                 self.labelled_folders.append((img_name, lbl))
@@ -126,4 +126,4 @@ def output_labels():
 if __name__ == '__main__':
     labeler = ImageLabeler(images_path, "labelled.csv", "unlabelled.txt")
     output_labels()
-    labeler.label_n_images(n=20)
+    labeler.label_n_images(n=8)
