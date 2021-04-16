@@ -10,9 +10,8 @@ from tqdm import tqdm
 from PIL import Image
 
 def load_data():
-    n = 500
-    first_n = lambda x: x[:n]
-    embeddings = first_n(np.loadtxt("triplet_scores.txt"))
+
+    embeddings = np.loadtxt("triplet_scores.txt")
     with open('triplet_files.txt') as f:
         files = f.read().split("\n")
         if "" in files: files.remove("")
@@ -82,13 +81,13 @@ def dist_dict(scores, files):
 
                 dist_dict[f1][f2] = dist_dict[f2][f1] = dist
 
-    return dist_dict
+    np.save("diff_dict.npy", dist_dict)
 
 
 def get_accuracy(file, dist_dict, k = 5):
     name = file.split("\\")[-2]
     row = list(dist_dict[file].items())
-    k_smallest_diffs = sorted(row, key=lambda x: x[1])[0:k + 1]
+    k_smallest_diffs = sorted(row, key=lambda x: x[1])[0:k]
     image_paths =  k_smallest_diffs
     score = 0
     for path,_ in image_paths:
@@ -115,7 +114,7 @@ def show_example(files, dist_dict, k = 7, file = None):
         file = random.choice(files)
 
     row = list(dist_dict[file].items())
-    k_smallest_diffs = sorted(row, key=lambda x: x[1])[0:k + 1]
+    k_smallest_diffs = sorted(row, key=lambda x: x[1])[0:k ]
     image_paths = [(file,0)] + k_smallest_diffs
     out = []
     imgs = []
@@ -126,23 +125,28 @@ def show_example(files, dist_dict, k = 7, file = None):
 
     showImages(imgs)
 
+generate_dict = False
 
 scores, labels, files = load_data()
-diffs = dist_dict(scores, files)
+if generate_dict:
+    dist_dict(scores, files)
 # for i in range(5): show_example(files, diffs )
+diffs = np.load("diff_dict.npy", allow_pickle=True).item()
 accuracies = []
 max_ac = 0
+k = 3
 best = ""
-for i in range(200):
-    file = random.choice(files)
-    ac = get_accuracy(file, diffs, 4)
+for file in files:
+    # file =random.choice(files)
+    ac = get_accuracy(file, diffs, k)
     accuracies.append(ac)
 
-    if ac > max_ac:
+    if ac >= max_ac:
         best = file
         max_ac = ac
 
 print(np.mean(accuracies))
+print({ac : accuracies.count(ac) for ac in accuracies})
 print(best)
 print(max_ac)
-show_example(files, diffs, k=4, file=best)
+show_example(files, diffs, k=k, file=best)
