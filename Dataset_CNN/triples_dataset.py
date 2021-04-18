@@ -5,8 +5,8 @@ from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
-import triplet_dataset_old as old
-
+import Dataset_CNN.generate_error_matrix as g_e_m
+import os
 
 ##Generating Triples method from this article https://towardsdatascience.com/image-similarity-using-triplet-loss-3744c0f67973
 
@@ -15,9 +15,12 @@ class ClothesFolder(ImageFolder):
     def __init__(self,root , transform=None):
         super(ClothesFolder, self).__init__(root=root, transform = transform)
         # super().__init__(root=image_path, transform = transform,sample_for_negatives,load_data)
-
-        self.error_diff = np.load("error_net_diff.npy", allow_pickle=True).item()
-        print("Keys: ", len(self.error_diff.keys()))
+        name  = root.split("/")[-1]
+        if any([name == p.split(".")[0] for p in os.listdir("data")]):
+            self.error_diff = np.load("data/" + name + ".npy", allow_pickle=True).item()
+        else:
+            g_e_m.generate_matrix(root, name)
+            self.error_diff = np.load("data/" + name + ".npy", allow_pickle=True).item()
 
         self.images = {}
         for dir in self.classes:
@@ -144,10 +147,10 @@ def showImages(net, old):
 
     net_images.show()
 
-images_path = "../../uob_image_set_1000"
 
 
 if __name__ == '__main__':
+    images_path = "../../uob_image_set_1000"
 
     transform = transforms.Resize((1333//5,1000//5))
     # dataset = old.ClothesFolder(images_path, transform = transform)

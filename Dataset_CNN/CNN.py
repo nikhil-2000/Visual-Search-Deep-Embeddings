@@ -27,7 +27,7 @@ from sklearn.manifold import TSNE
 import seaborn as sns
 import matplotlib.pyplot as plt
 from collections import Counter
-from triples_dataset import ClothesFolder
+from Dataset_CNN.triples_dataset import ClothesFolder
 
 # correct "too many files" error
 import torch.multiprocessing
@@ -52,7 +52,7 @@ data_transforms = {
         transforms.RandomResizedCrop(input_size),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
     'val': transforms.Compose([
         transforms.Resize(input_size),
@@ -60,6 +60,21 @@ data_transforms = {
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
+}
+
+data_transforms = {
+    'train': transforms.Compose([
+        transforms.Resize((T_G_HEIGHT, T_G_WIDTH)),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ]),
+    'val': transforms.Compose([
+        transforms.Resize((T_G_HEIGHT, T_G_WIDTH)),
+        # transforms.CenterCrop(input_size),
+        transforms.ToTensor(),
+        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
 }
 
 def set_parameter_requires_grad(model, feature_extracting):
@@ -185,7 +200,6 @@ def learn(argv):
 
             running_loss.append(loss.cpu().detach().numpy())
 
-        print(step)
         print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, np.mean(running_loss)))
 
     torch.save({
@@ -295,7 +309,32 @@ def main(argv):
 
     return
 
+def get_args():
+    print(usagemessage)
+    print("Enter args:")
+    args = input()
+    args = args.split(" ")
+    return args
+
 
 # Main Driver
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    args = get_args()
+    main(args)
+    # in_t_folder = "../../uob_image_set_100"
+    # batch = 1
+    # train_ds = ClothesFolder(root=in_t_folder, transform=data_transforms["train"])
+    # train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True, num_workers=1)
+    #
+    # anchor,pos, neg = next(iter(train_loader))
+    # fig, axs = plt.subplots(1,3)
+    # print(anchor.shape)
+    # axs[0].imshow(anchor[0].permute(1, 2, 0))
+    # axs[1].imshow(pos[0].permute(1, 2, 0))
+    # axs[2].imshow(neg[0].permute(1, 2, 0))
+    # plt.show()
+    #
+    # print("DONE")
+
+#-learn ../../uob_image_set_100 1000 10 20 data/triplet
+#-extract data/triplet.pth ../../uob_image_set_100 data/triplet 1

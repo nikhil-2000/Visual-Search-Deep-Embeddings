@@ -15,7 +15,7 @@ class ClothesFolder(ImageFolder):
         super(ClothesFolder, self).__init__(root=root, transform=transform)
         # super().__init__(root=image_path, transform = transform,sample_for_negatives,load_data)
 
-        self.error_diff = np.load('../Nikhil/error_diff.npy', allow_pickle=True).item()
+        self.error_diff = np.load('error_diff.npy', allow_pickle=True).item()
 
         self.images = {}
         for dir in self.classes:

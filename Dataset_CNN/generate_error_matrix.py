@@ -173,7 +173,6 @@ for param in resnet.parameters():
     param.requires_grad = False
 num_ftrs = resnet.fc.in_features
 
-print(num_ftrs)
 
 
 class Identity(torch.nn.Module):
@@ -192,12 +191,12 @@ path = '../../uob_image_set_1000'
 N_CHANNELS = 3
 
 # images, num_images = load_images_from_folder(path, 100, as_tensor=False)
-images, num_images = get_images(path)
+def generate_matrix(path,name):
+    images, num_images = get_images(path)
 
-list_input_batch, list_input_tensor = preprocess_and_batch(images)
-network_output = feed_batch_to_network(list_input_batch, resnet)
+    list_input_batch, list_input_tensor = preprocess_and_batch(images)
+    network_output = feed_batch_to_network(list_input_batch, resnet)
 
-all_paths = get_path_list(path, sum(num_images))
-diff_dict = get_diff_matrix(network_output,all_paths )
-print("Keys : ", len(diff_dict.keys()))
-np.save("error_net_diff.npy", diff_dict)
+    all_paths = get_path_list(path, sum(num_images))
+    diff_dict = get_diff_matrix(network_output,all_paths )
+    np.save("data/" + name + ".npy", diff_dict)

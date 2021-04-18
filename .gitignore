@@ -5,3 +5,5 @@
 .vscode
 *.p
 /Nikhil/data
+Visualisations/Outputs
+Dataset_CNN/data
