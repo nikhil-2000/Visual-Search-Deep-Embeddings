@@ -4,5 +4,7 @@
 .DS_Store
 .vscode
 *.p
-
-/Nikhil/data/
+/Nikhil/data
+Visualisations/Outputs
+Dataset_CNN/data
+*.pyc
