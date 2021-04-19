@@ -36,6 +36,8 @@ class DeepFeatures(torch.nn.Module):
 
         super(DeepFeatures, self).__init__()
 
+        self.step = 0
+
         self.model = model
         self.model.eval()
 
@@ -46,6 +48,15 @@ class DeepFeatures(torch.nn.Module):
         self.name = experiment_name
 
         self.writer = None
+
+        if len(os.listdir(self.imgs_folder)) != 0:
+            "Images folder must be empty"
+            clear_folder(self.imgs_folder)
+
+
+        if len(os.listdir(self.embs_folder)) != 0:
+            "Embeddings folder must be empty"
+            clear_folder(self.embs_folder)
 
     def generate_embeddings(self, x):
         '''
@@ -77,14 +88,7 @@ class DeepFeatures(torch.nn.Module):
 
         '''
 
-        if len(os.listdir(self.imgs_folder)) != 0:
-            "Images folder must be empty"
-            clear_folder(self.imgs_folder)
 
-
-        if len(os.listdir(self.embs_folder)) != 0:
-            "Embeddings folder must be empty"
-            clear_folder(self.embs_folder)
 
         # Generate embeddings
         embs = self.generate_embeddings(x)
@@ -140,11 +144,13 @@ class DeepFeatures(torch.nn.Module):
         if self.writer is None:
             self._create_writer(self.name)
 
+
+
         ## Read in
         all_embeddings = [np.load(os.path.join(self.embs_folder, p)) for p in os.listdir(self.embs_folder) if
-                          p.endswith('.npy')]
+                          p.endswith('.npy') and p.replace(".npy", "") in img_names]
         all_images = [np.load(os.path.join(self.imgs_folder, p)) for p in os.listdir(self.imgs_folder) if
-                      p.endswith('.npy')]
+                      p.endswith('.npy') and p.replace(".npy", "") in img_names]
         all_images = [np.moveaxis(a, 2, 0) for a in all_images]  # (HWC) -> (CHW)
 
         ## Stack into tensors
@@ -153,8 +159,9 @@ class DeepFeatures(torch.nn.Module):
 
         print(all_embeddings.shape)
         print(all_images.shape)
-
-        self.writer.add_embedding(all_embeddings,metadata = img_names,  label_img=all_images)
+        img_names = [name[:-2] for name in img_names]
+        self.writer.add_embedding(all_embeddings,metadata = img_names,  label_img=all_images, global_step = self.step)
+        self.step += 1
 
 
 def tensor2np(tensor, resize_to=None):

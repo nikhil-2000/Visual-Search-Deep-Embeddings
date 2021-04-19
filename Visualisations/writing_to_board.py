@@ -8,14 +8,14 @@ from Visualisations.DF import DeepFeatures
 import matplotlib.pyplot as plt
 
 BATCH_SIZE = 100
-DATA_FOLDER = r'../../uob_image_set_100'
+DATA_FOLDER = r'../../uob_image_set_1000'
 IMGS_FOLDER = './Outputs/Images'
 EMBS_FOLDER = './Outputs/Embeddings'
 TB_FOLDER = './Outputs/Tensorboard'
 EXPERIMENT_NAME = 'UOB_IMAGE_SET_VIS'
 
-T_G_WIDTH = 100
-T_G_HEIGHT = 134
+T_G_WIDTH = 50
+T_G_HEIGHT = 50
 T_G_NUMCHANNELS = 3
 T_G_SEED = 1337
 
@@ -82,15 +82,6 @@ for step, (batch_imgs, batch_labels, batch_paths) in tqdm(enumerate(data_loader)
     # first_img = batch_imgs[0].to(device)
     # plt.imshow(first_img.permute(1, 2, 0).cpu())
     # plt.show()
-    if all_imgs is None:
-        all_imgs = batch_imgs
-    else:
-        all_imgs = torch.cat((all_imgs, batch_imgs))
-
-    if all_embs is None:
-        all_embs = embs
-    else:
-        all_embs = torch.cat((all_embs, embs))
 
     if all_names is None:
         all_names = batch_names
@@ -98,5 +89,7 @@ for step, (batch_imgs, batch_labels, batch_paths) in tqdm(enumerate(data_loader)
         all_names.extend(batch_names)
 
 
-DF.write_embeddings(x = all_imgs.to(device), labels = all_names)
+    DF.write_embeddings(x = batch_imgs.to(device), labels = batch_names, outsize=(T_G_HEIGHT, T_G_HEIGHT))
+
+
 DF.create_tensorboard_log(all_names)
