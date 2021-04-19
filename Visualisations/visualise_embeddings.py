@@ -11,12 +11,12 @@ from PIL import Image
 
 def load_data():
 
-    embeddings = np.loadtxt("triplet_scores.txt")
-    with open('triplet_files.txt') as f:
+    embeddings = np.loadtxt("../Dataset_CNN/data/triplet_scores.txt")
+    with open('../Dataset_CNN/data/triplet_files.txt') as f:
         files = f.read().split("\n")
         if "" in files: files.remove("")
 
-    with open('triplet_labels.txt') as f:
+    with open('../Dataset_CNN/data/triplet_labels.txt') as f:
         labels = f.read().split("\n")
         if "" in labels: labels.remove("")
 
@@ -81,7 +81,7 @@ def dist_dict(scores, files):
 
                 dist_dict[f1][f2] = dist_dict[f2][f1] = dist
 
-    np.save("diff_dict.npy", dist_dict)
+    np.save("../Dataset_CNN/data/diff_dict.npy", dist_dict)
 
 
 def get_accuracy(file, dist_dict, k = 5):
@@ -125,17 +125,18 @@ def show_example(files, dist_dict, k = 7, file = None):
 
     showImages(imgs)
 
-generate_dict = False
+generate_dict = True
 
 scores, labels, files = load_data()
 if generate_dict:
     dist_dict(scores, files)
 # for i in range(5): show_example(files, diffs )
-diffs = np.load("diff_dict.npy", allow_pickle=True).item()
+diffs = np.load("../Dataset_CNN/data/diff_dict.npy", allow_pickle=True).item()
 accuracies = []
 max_ac = 0
-k = 3
+k = 4
 best = ""
+random.shuffle(files)
 for file in files:
     # file =random.choice(files)
     ac = get_accuracy(file, diffs, k)
