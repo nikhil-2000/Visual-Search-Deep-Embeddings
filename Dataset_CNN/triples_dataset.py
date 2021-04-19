@@ -7,8 +7,11 @@ from torchvision import transforms
 from torchvision.datasets import ImageFolder
 import Dataset_CNN.generate_error_matrix as g_e_m
 import os
-
+import torch
 ##Generating Triples method from this article https://towardsdatascience.com/image-similarity-using-triplet-loss-3744c0f67973
+
+torch.multiprocessing.set_sharing_strategy('file_system')
+torch.cuda.empty_cache()
 
 class ClothesFolder(ImageFolder):
     
@@ -16,11 +19,12 @@ class ClothesFolder(ImageFolder):
         super(ClothesFolder, self).__init__(root=root, transform = transform)
         # super().__init__(root=image_path, transform = transform,sample_for_negatives,load_data)
         name  = root.split("/")[-1]
-        if any([name == p.split(".")[0] for p in os.listdir("data")]):
-            self.error_diff = np.load("data/" + name + ".npy", allow_pickle=True).item()
-        else:
+        if not any([name == p.split(".")[0] for p in os.listdir("data")]):
             g_e_m.generate_matrix(root, name)
-            self.error_diff = np.load("data/" + name + ".npy", allow_pickle=True).item()
+
+        diff_dicts = np.load("data/" + name + ".npy", allow_pickle=True)
+        self.negative_error_diffs, self.positive_error_diffs = diff_dicts
+
 
         self.images = {}
         for dir in self.classes:
@@ -48,11 +52,20 @@ class ClothesFolder(ImageFolder):
 
     def __getitem__(self,index):
         anchor_path, anchor_target = self.samples[index]
-        pos_images = [i for i in self.images[anchor_target] if i != anchor_path]
-        pos_path = random.choice(pos_images)
         anchor_class = anchor_path.split("\\")[-1].split(".")[0]
-        #to do next:weight closer images higher in random choice 
-        neg_name = random.choice(self.get_closest(anchor_class,5))[0]
+
+        pos_paths = [i for i in self.images[anchor_target] if i != anchor_path]
+        positives = list(self.positive_error_diffs[anchor_class].items())
+        names, distances = list(zip(*positives))
+        weights = self.get_probabilties(distances, exp_sign = 1 )
+        pos_path = np.random.choice(pos_paths, p = weights)
+
+
+        #to do next:weight closer images higher in random choice
+        negatives = self.get_closest(anchor_class,5)
+        names, distances = list(zip(*negatives))
+        weights = self.get_probabilties(distances, exp_sign = 1 )
+        neg_name = np.random.choice(names, p = weights)
         neg_idx = self.class_to_idx[neg_name.split("_")[0]]
         paths_neg_dir = self.images[neg_idx]
         neg_path = [p for p in paths_neg_dir if neg_name in p][0]
@@ -76,9 +89,22 @@ class ClothesFolder(ImageFolder):
         return a_sample, p_sample, n_sample
 
     def get_closest(self,class_name, k):
-            row = list(self.error_diff[class_name].items())
+            row = list(self.negative_error_diffs[class_name].items())
             k_smallest_idx = sorted(row,key=lambda x: x[1])[1:k+1]
             return k_smallest_idx
+
+    def get_probabilties(self, distances , exp_sign = 1):
+        exponetial_list = []
+        for i in distances:
+            exponetial = np.exp(exp_sign * i)
+            exponetial_list.append(exponetial)
+
+        batch_weighted_triplet_list = []
+        sum_exp = sum(exponetial_list)
+        for e in exponetial_list:
+            weighted_triplet = e / sum_exp
+            batch_weighted_triplet_list.append(weighted_triplet)
+        return batch_weighted_triplet_list
 
     def test_output_k_closest(self, idx, k = 5):
 
@@ -157,10 +183,10 @@ if __name__ == '__main__':
     dataset_net = ClothesFolder(images_path, transform = transform)
 
 
-    for i in range(1):
-        i = random.randint(0, 1000)
+    for i in range(10):
+        i = random.randint(0, 100)
         print(i)
-        test_net = dataset_net.test_output_k_closest(i , 10)
+        test_net = dataset_net[i]
         # test_old = dataset.output_k_closest(i,10)
         showImages(test_net, [])
     # print(test)

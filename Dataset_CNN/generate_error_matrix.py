@@ -8,9 +8,14 @@ from torchvision import models
 from torchvision import transforms
 from tqdm import tqdm, trange
 
-torch.cuda.is_available()
 torch.multiprocessing.set_sharing_strategy('file_system')
 torch.cuda.empty_cache()
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if device.type == "cuda":
+    print('Using GPU device: ' + torch.cuda.get_device_name(torch.cuda.current_device()))
+else:
+    print('Using CPU device.')
 
 
 def get_images(path, lim  = None):
@@ -101,26 +106,49 @@ def preprocess_and_batch(image_list):
     print()
     return list_input_batch, list_input_tensor
 
+def preprocess_and_batch_single(image_path):
+    img = Image.open(image_path)
+    input_tensor = preprocess(img)
+    input_batch = input_tensor.unsqueeze(0)
+    return input_batch
+
 def feed_batch_to_network(list_input_batch, network):
     output_array = []
     print("Feeding Batches")
+    network.to('cuda')
     for i in trange(len(list_input_batch)):
         if torch.cuda.is_available():
             input_batch = list_input_batch[i].to('cuda')
-            resnet.to('cuda')
         else:
             input_batch = list_input_batch[i].to('cpu')
-            resnet.to('cpu')
 
         with torch.no_grad():
             output = network(input_batch)
             cpu_tensor = output.cpu()
             pos = cpu_tensor[0].tolist()
             output_array.append(pos)
+
     output_array = np.asarray(output_array)
     print()
     return output_array
 
+def feed_to_network(image_list, network):
+    output_array = []
+    print("Feeding Batches")
+    network.to(device)
+    for i in trange(len(image_list)):
+        input_batch = preprocess_and_batch_single(image_list[i])
+        input_batch = input_batch.to(device)
+
+        with torch.no_grad():
+            output = network(input_batch)
+            cpu_tensor = output.detach().cpu()
+            pos = cpu_tensor[0].tolist()
+            output_array.append(pos)
+
+    output_array = np.asarray(output_array)
+    print()
+    return output_array
 
 
 
@@ -139,9 +167,11 @@ def get_path_list(path, lim):
     return all_paths
 
 
-def get_diff_matrix(embeddings, image_names):
+
+def get_diff_dicts(embeddings, image_names):
     n = len(image_names)
     emb_diff = dict([(name, {}) for name in image_names])
+    pos_diff = dict([(name, {}) for name in image_names])
 
     print()
     print("Calculating Diffs...")
@@ -149,21 +179,21 @@ def get_diff_matrix(embeddings, image_names):
         folder_name = image_names[i].split("_")[0]
         for j in range(0, i):
             comparison_name = image_names[j].split("_")[0]
+            emb_1 = embeddings[i]
+            emb_1_name = image_names[i]
+            emb_2 = embeddings[j]
+            emb_2_name = image_names[j]
+            diff = np.linalg.norm(emb_1 - emb_2)
+
             if folder_name != comparison_name:
-                emb_1 = embeddings[i]
-                emb_1_name = image_names[i]
-                emb_2 = embeddings[j]
-                emb_2_name = image_names[j]
-
-
-                diff = np.linalg.norm(emb_1 - emb_2)
                 emb_diff[emb_1_name][emb_2_name] = diff
                 emb_diff[emb_2_name][emb_1_name] = diff
-                # matrix[i][j] = diff
-                # matrix[j][i] = diff
+            else:
+                pos_diff[emb_1_name][emb_2_name] = diff
+                pos_diff[emb_2_name][emb_1_name] = diff
 
 
-    return emb_diff
+    return [emb_diff, pos_diff]
 
 
 resnet = models.resnet152(pretrained=True)
@@ -186,17 +216,23 @@ class Identity(torch.nn.Module):
 resnet.fc = Identity()  # Remove the prediction head
 
 
-path = '../../uob_image_set_1000'
+path = '../../uob_image_set_100'
 
 N_CHANNELS = 3
 
 # images, num_images = load_images_from_folder(path, 100, as_tensor=False)
 def generate_matrix(path,name):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device.type == "cuda":
+        print('Using GPU device: ' + torch.cuda.get_device_name(torch.cuda.current_device()))
+    else:
+        print('Using CPU device.')
+
     images, num_images = get_images(path)
 
-    list_input_batch, list_input_tensor = preprocess_and_batch(images)
-    network_output = feed_batch_to_network(list_input_batch, resnet)
+    # list_input_batch, list_input_tensor = preprocess_and_batch(images)
+    network_output = feed_to_network(images, resnet)
 
     all_paths = get_path_list(path, sum(num_images))
-    diff_dict = get_diff_matrix(network_output,all_paths )
-    np.save("data/" + name + ".npy", diff_dict)
+    diffs_dicts = get_diff_dicts(network_output,all_paths )
+    np.save("data/" + name + ".npy", diffs_dicts)
