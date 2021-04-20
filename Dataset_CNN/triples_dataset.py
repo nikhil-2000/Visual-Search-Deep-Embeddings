@@ -2,12 +2,12 @@ import random
 
 import numpy as np
 from PIL import Image
-from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
 import Dataset_CNN.generate_error_matrix as g_e_m
 import os
 import torch
+import pickle
 ##Generating Triples method from this article https://towardsdatascience.com/image-similarity-using-triplet-loss-3744c0f67973
 
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -17,13 +17,11 @@ class ClothesFolder(ImageFolder):
     
     def __init__(self,root , transform=None):
         super(ClothesFolder, self).__init__(root=root, transform = transform)
-        # super().__init__(root=image_path, transform = transform,sample_for_negatives,load_data)
         name  = root.split("/")[-1]
-        if not any([name == p.split(".")[0] for p in os.listdir("data")]):
+        if not any([name == p for p in os.listdir("data")]):
             g_e_m.generate_matrix(root, name)
 
-        diff_dicts = np.load("data/" + name + ".npy", allow_pickle=True)
-        self.negative_error_diffs, self.positive_error_diffs = diff_dicts
+        self.data_path = "data/" + name + "/"
 
 
         self.images = {}
@@ -52,17 +50,18 @@ class ClothesFolder(ImageFolder):
 
     def __getitem__(self,index):
         anchor_path, anchor_target = self.samples[index]
-        anchor_class = anchor_path.split("\\")[-1].split(".")[0]
+        anchor_name = anchor_path.split("\\")[-1].split(".")[0]
 
         pos_paths = [i for i in self.images[anchor_target] if i != anchor_path]
-        positives = list(self.positive_error_diffs[anchor_class].items())
+        positive_error_diffs = self.load_diff_dict("positives", anchor_name)
+        positives = list(positive_error_diffs.items())
         names, distances = list(zip(*positives))
         weights = self.get_probabilties(distances, exp_sign = 1 )
         pos_path = np.random.choice(pos_paths, p = weights)
 
 
         #to do next:weight closer images higher in random choice
-        negatives = self.get_closest(anchor_class,5)
+        negatives = self.get_closest(anchor_name,5)
         names, distances = list(zip(*negatives))
         weights = self.get_probabilties(distances, exp_sign = 1 )
         neg_name = np.random.choice(names, p = weights)
@@ -88,10 +87,11 @@ class ClothesFolder(ImageFolder):
         # note that we do not return the label!
         return a_sample, p_sample, n_sample
 
-    def get_closest(self,class_name, k):
-            row = list(self.negative_error_diffs[class_name].items())
-            k_smallest_idx = sorted(row,key=lambda x: x[1])[1:k+1]
-            return k_smallest_idx
+    def get_closest(self,image_name, k):
+        negative_error_diffs = self.load_diff_dict("negatives", image_name)
+        row = list(negative_error_diffs.items())
+        k_smallest_idx = sorted(row,key=lambda x: x[1])[1:k+1]
+        return k_smallest_idx
 
     def get_probabilties(self, distances , exp_sign = 1):
         exponetial_list = []
@@ -105,6 +105,14 @@ class ClothesFolder(ImageFolder):
             weighted_triplet = e / sum_exp
             batch_weighted_triplet_list.append(weighted_triplet)
         return batch_weighted_triplet_list
+
+    def load_diff_dict(self, folder, image_name):
+        path = os.path.join(self.data_path, folder, image_name + ".pickle")
+        with open(path, 'rb') as f:
+            # The protocol version used is detected automatically, so we do not
+            # have to specify it.
+            return pickle.load(f)
+
 
     def test_output_k_closest(self, idx, k = 5):
 
@@ -176,15 +184,15 @@ def showImages(net, old):
 
 
 if __name__ == '__main__':
-    images_path = "../../uob_image_set_1000"
+    images_path = "../../uob_image_set_10"
 
     transform = transforms.Resize((1333//5,1000//5))
     # dataset = old.ClothesFolder(images_path, transform = transform)
     dataset_net = ClothesFolder(images_path, transform = transform)
 
 
-    for i in range(10):
-        i = random.randint(0, 100)
+    for i in range(3):
+        i = random.randint(0, 10)
         print(i)
         test_net = dataset_net[i]
         # test_old = dataset.output_k_closest(i,10)

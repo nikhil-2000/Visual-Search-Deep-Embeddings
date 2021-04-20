@@ -194,6 +194,10 @@ def learn(argv):
             positive_out = model(positive_img)
             negative_out = model(negative_img)
 
+            del anchor_img
+            del positive_img
+            del negative_img
+
             loss = criterion(anchor_out, positive_out, negative_out)
             loss.backward()
             optimizer.step()
@@ -319,8 +323,8 @@ def get_args():
 
 # Main Driver
 if __name__ == "__main__":
-    args = get_args()
-    main(args)
+    # args = get_args()
+    main(sys.argv[1:])
     # in_t_folder = "../../uob_image_set_100"
     # batch = 1
     # train_ds = ClothesFolder(root=in_t_folder, transform=data_transforms["train"])
