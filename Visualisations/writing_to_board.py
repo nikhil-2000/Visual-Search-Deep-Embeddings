@@ -8,7 +8,7 @@ from Visualisations.DF import DeepFeatures
 import matplotlib.pyplot as plt
 
 BATCH_SIZE = 100
-DATA_FOLDER = r'../../uob_image_set_1000'
+DATA_FOLDER = r'../../uob_image_set_10'
 IMGS_FOLDER = './Outputs/Images'
 EMBS_FOLDER = './Outputs/Embeddings'
 TB_FOLDER = './Outputs/Tensorboard'

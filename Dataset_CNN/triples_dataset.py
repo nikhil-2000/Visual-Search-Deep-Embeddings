@@ -8,6 +8,7 @@ import Dataset_CNN.generate_error_matrix as g_e_m
 import os
 import torch
 import pickle
+import pandas as pd
 ##Generating Triples method from this article https://towardsdatascience.com/image-similarity-using-triplet-loss-3744c0f67973
 
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -20,6 +21,8 @@ class ClothesFolder(ImageFolder):
         name  = root.split("/")[-1]
         if not any([name == p for p in os.listdir("data")]):
             g_e_m.generate_matrix(root, name)
+
+        self.labels_to_folder, self.folder_to_labels = self.convert_to_dict(pd.read_csv("../labelling_images/labelled.csv"))
 
         self.data_path = "data/" + name + "/"
 
@@ -84,13 +87,21 @@ class ClothesFolder(ImageFolder):
             p_sample = self.transform(p_sample)
             n_sample = self.transform(n_sample)
 
+        print(anchor_path,neg_path)
+
         # note that we do not return the label!
         return a_sample, p_sample, n_sample
 
     def get_closest(self,image_name, k):
         negative_error_diffs = self.load_diff_dict("negatives", image_name)
+        isLabelled = image_name[:8] in self.folder_to_labels.keys()
+
         row = list(negative_error_diffs.items())
-        k_smallest_idx = sorted(row,key=lambda x: x[1])[1:k+1]
+        if isLabelled:
+            label = self.folder_to_labels[image_name[:8]]
+            other_folders = self.labels_to_folder[label]
+            row = list(filter(lambda r: r[0][:8] in other_folders,row))
+        k_smallest_idx = sorted(row,key=lambda x: x[1])[0:k]
         return k_smallest_idx
 
     def get_probabilties(self, distances , exp_sign = 1):
@@ -144,7 +155,22 @@ class ClothesFolder(ImageFolder):
 
         # note that we do not return the label!
         return [a_sample] +  neg_samples
-                 
+
+    def convert_to_dict(self, labelled_df):
+        print(labelled_df.columns)
+        label_to_folder = {}
+        folder_to_label = {}
+        for index, row in labelled_df.iterrows():
+            label, folder = row["label"], str(row["folder"])
+            if not (label in label_to_folder.keys()):
+                label_to_folder[label] = []
+
+            label_to_folder[label].append(folder)
+            folder_to_label[folder] = label
+
+        return label_to_folder, folder_to_label
+
+
 # images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
 
 def show_example_triplet(triple):
@@ -183,16 +209,17 @@ def showImages(net, old):
 
 
 
+
 if __name__ == '__main__':
-    images_path = "../../uob_image_set_10"
+    images_path = "../../uob_image_set"
 
     transform = transforms.Resize((1333//5,1000//5))
     # dataset = old.ClothesFolder(images_path, transform = transform)
     dataset_net = ClothesFolder(images_path, transform = transform)
 
 
-    for i in range(3):
-        i = random.randint(0, 10)
+    for i in range(5):
+        i = random.randint(0, 1500)
         print(i)
         test_net = dataset_net[i]
         # test_old = dataset.output_k_closest(i,10)

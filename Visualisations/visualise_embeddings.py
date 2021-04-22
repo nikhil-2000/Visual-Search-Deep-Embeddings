@@ -9,14 +9,14 @@ import torch.tensor as tensor
 from tqdm import tqdm
 from PIL import Image
 
-def load_data():
+def load_data(outfile):
 
-    embeddings = np.loadtxt("../Dataset_CNN/data/triplet_scores.txt")
-    with open('../Dataset_CNN/data/triplet_files.txt') as f:
+    embeddings = np.loadtxt("../Dataset_CNN/data/" + outfile + "_scores.txt")
+    with open('../Dataset_CNN/data/' + outfile + '_files.txt') as f:
         files = f.read().split("\n")
         if "" in files: files.remove("")
 
-    with open('../Dataset_CNN/data/triplet_labels.txt') as f:
+    with open('../Dataset_CNN/data/' + outfile + '_labels.txt') as f:
         labels = f.read().split("\n")
         if "" in labels: labels.remove("")
 
@@ -67,7 +67,7 @@ Random Example
     
 """
 
-def dist_dict(scores, files):
+def dist_dict(scores, files, outfile):
     s = scores.shape
     dist_dict = { k : {} for k in files}
 
@@ -81,7 +81,7 @@ def dist_dict(scores, files):
 
                 dist_dict[f1][f2] = dist_dict[f2][f1] = dist
 
-    np.save("../Dataset_CNN/data/diff_dict.npy", dist_dict)
+    np.save("../Dataset_CNN/data/" + outfile + ".npy", dist_dict)
 
 
 def get_accuracy(file, dist_dict, k = 5):
@@ -126,12 +126,12 @@ def show_example(files, dist_dict, k = 7, file = None):
     showImages(imgs)
 
 generate_dict = True
-
-scores, labels, files = load_data()
+outfile = "small"
+scores, labels, files = load_data(outfile)
 if generate_dict:
-    dist_dict(scores, files)
+    dist_dict(scores, files, outfile)
 # for i in range(5): show_example(files, diffs )
-diffs = np.load("../Dataset_CNN/data/diff_dict.npy", allow_pickle=True).item()
+diffs = np.load("../Dataset_CNN/data/" + outfile + ".npy", allow_pickle=True).item()
 accuracies = []
 max_ac = 0
 k = 4

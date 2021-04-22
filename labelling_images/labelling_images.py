@@ -72,7 +72,7 @@ class ImageLabeler():
     def full_path(self, dir_name):
         image_folder = os.path.join(self.path, dir_name)
 
-        img_name = os.listdir(image_folder)[0]
+        img_name = [file for file in os.listdir(image_folder) if "_0" in file][0]
         return os.path.join(image_folder, img_name)
 
     def label_image(self, idx, wait_time=0):
