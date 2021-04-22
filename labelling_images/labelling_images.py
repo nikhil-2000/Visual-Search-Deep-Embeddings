@@ -33,7 +33,12 @@ labels = ['Accessory',
           'Trouser',
           'Unknown',
           'Wallet/Purse',
-          'Wrist wear']
+          'Wrist wear',
+          'Heels',
+          'Tie',
+          'Ring',
+          'Socks',
+          'Boots']
 images_path = "../../uob_image_set"
 
 
