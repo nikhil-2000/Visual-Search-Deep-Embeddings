@@ -1,11 +1,16 @@
-# GLOBAL DEFINES
+from __future__ import absolute_import
+import sys, os
+
+project_path = os.path.abspath("..")
+sys.path.insert(0, project_path)
+
+
 T_G_WIDTH = 100
 T_G_HEIGHT = 134
 T_G_NUMCHANNELS = 3
 T_G_SEED = 1337
 
 usagemessage = 'Usage: \n\t -learn <Train Folder> <embedding size> <batch size> <num epochs> <output model file> \n\t -extract <Model File> <Input Image Folder> <Output File Prefix (TXT)> <tsne perplexity (optional)>\n\t\tBuilds and scores a triplet-loss embedding model.'
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -104,8 +109,12 @@ class EmbeddingNetwork(nn.Module):
         self.backbone.fc = Identity()
 
         # make that layer trainable
-        for param in self.backbone.fc.parameters():
-            param.requires_grad = True
+        if freeze_params:
+            for param in self.backbone.fc.parameters():
+                param.requires_grad = True
+        elif not freeze_params:
+            for param in self.backbone.parameters():
+                param.requires_grad = True
 
         self.inputsize = T_G_WIDTH
 

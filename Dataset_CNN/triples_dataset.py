@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+import sys, os
+
+project_path = os.path.abspath("..")
+sys.path.insert(0, project_path)
 import random
 
 import numpy as np
@@ -5,7 +10,6 @@ from PIL import Image
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
 import Dataset_CNN.generate_error_matrix as g_e_m
-import os
 import torch
 import pickle
 import pandas as pd
@@ -87,7 +91,6 @@ class ClothesFolder(ImageFolder):
             p_sample = self.transform(p_sample)
             n_sample = self.transform(n_sample)
 
-        print(anchor_path,neg_path)
 
         # note that we do not return the label!
         return a_sample, p_sample, n_sample
@@ -101,6 +104,8 @@ class ClothesFolder(ImageFolder):
             label = self.folder_to_labels[image_name[:8]]
             other_folders = self.labels_to_folder[label]
             row = list(filter(lambda r: r[0][:8] in other_folders,row))
+
+        if len(row) == 0: row = list(negative_error_diffs.items())
         k_smallest_idx = sorted(row,key=lambda x: x[1])[0:k]
         return k_smallest_idx
 
@@ -157,7 +162,6 @@ class ClothesFolder(ImageFolder):
         return [a_sample] +  neg_samples
 
     def convert_to_dict(self, labelled_df):
-        print(labelled_df.columns)
         label_to_folder = {}
         folder_to_label = {}
         for index, row in labelled_df.iterrows():

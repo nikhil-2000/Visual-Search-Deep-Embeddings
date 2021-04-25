@@ -1,4 +1,8 @@
-import os
+from __future__ import absolute_import
+import sys, os
+
+project_path = os.path.abspath("..")
+sys.path.insert(0, project_path)
 
 import numpy as np
 import torch
@@ -9,7 +13,7 @@ from tqdm import tqdm, trange
 import pickle
 
 
-def get_images(path, lim  = None):
+def get_images(path, lim=None):
     all_images = []
     num_img_list = []
     folders = os.listdir(path)
@@ -21,7 +25,7 @@ def get_images(path, lim  = None):
     for folder in tqdm(folders):
         path_folder = os.path.join(path, folder)
         inside = os.listdir(path_folder)
-        inside = [os.path.join(path_folder,i) for i in inside]
+        inside = [os.path.join(path_folder, i) for i in inside]
         num_img_list.append(len(inside))
         all_images.extend(inside)
         folder_count += 1
@@ -31,6 +35,7 @@ def get_images(path, lim  = None):
 
     print()
     return all_images, num_img_list
+
 
 # the path where the folder is
 
@@ -46,6 +51,7 @@ preprocess = transforms.Compose([
         std=[0.229, 0.224, 0.225]
     )])
 
+
 def preprocess_and_batch_image(image_path):
     img = Image.open(image_path)
     input_tensor = preprocess(img)
@@ -54,7 +60,6 @@ def preprocess_and_batch_image(image_path):
 
 
 def feed_to_network(image_list, network):
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type == "cuda":
         print('Using GPU device: ' + torch.cuda.get_device_name(torch.cuda.current_device()))
@@ -79,7 +84,6 @@ def feed_to_network(image_list, network):
     return output_array
 
 
-
 def get_path_list(path, lim):
     all_paths = []
     folders = os.listdir(path)
@@ -95,11 +99,10 @@ def get_path_list(path, lim):
     return all_paths
 
 
-
 def get_diff_dicts(embeddings, image_names):
     n = len(image_names)
-    class_to_idx = {name : i for i,name in enumerate(image_names)}
-    idx_to_class = {i : name for i,name in enumerate(image_names)}
+    class_to_idx = {name: i for i, name in enumerate(image_names)}
+    idx_to_class = {i: name for i, name in enumerate(image_names)}
     emb_diff = dict([(name, {}) for name in image_names])
     pos_diff = dict([(name, {}) for name in image_names])
 
@@ -122,8 +125,8 @@ def get_diff_dicts(embeddings, image_names):
                 pos_diff[emb_1_key][emb_2_key] = diff
                 pos_diff[emb_2_key][emb_1_key] = diff
 
-
     return [emb_diff, pos_diff, class_to_idx, idx_to_class]
+
 
 def setup_model():
     resnet = models.resnet152(pretrained=True)
@@ -144,17 +147,15 @@ class Identity(torch.nn.Module):
         return x
 
 
-
-
 # images, num_images = load_images_from_folder(path, 100, as_tensor=False)
-def generate_matrix(path,name):
+def generate_matrix(path, name):
     images, num_images = get_images(path)
     resnet = setup_model()
     # list_input_batch, list_input_tensor = preprocess_and_batch(images)
     network_output = feed_to_network(images, resnet)
 
     all_paths = get_path_list(path, sum(num_images))
-    negatives, positives, class_to_idx, idx_to_class = get_diff_dicts(network_output,all_paths )
+    negatives, positives, class_to_idx, idx_to_class = get_diff_dicts(network_output, all_paths)
     del resnet
     del network_output
 
@@ -162,12 +163,12 @@ def generate_matrix(path,name):
     os.mkdir(dir)
     os.mkdir(dir + '/negatives')
     os.mkdir(dir + '/positives')
-        # Pickle the 'data' dictionary using the highest protocol available.
-    for name,diffs in negatives.items():
+    # Pickle the 'data' dictionary using the highest protocol available.
+    for name, diffs in negatives.items():
         with open(dir + "/negatives/" + name + ".pickle", "wb") as f:
             pickle.dump(diffs, f, pickle.HIGHEST_PROTOCOL)
 
-    for name,diffs in positives.items():
+    for name, diffs in positives.items():
         with open(dir + "/positives/" + name + ".pickle", "wb") as f:
             pickle.dump(diffs, f, pickle.HIGHEST_PROTOCOL)
 
@@ -178,9 +179,6 @@ def generate_matrix(path,name):
     # with open(dir + '/idx_to_name.pickle', 'wb') as f:
     #     # Pickle the 'data' dictionary using the highest protocol available.
     #     pickle.dump(idx_to_class, f, pickle.HIGHEST_PROTOCOL)
-
-
-
 
 # def feed_batch_to_network(list_input_batch, network):
 #     output_array = []

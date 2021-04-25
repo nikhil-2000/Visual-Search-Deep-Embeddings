@@ -1,11 +1,16 @@
+from __future__ import absolute_import
+
+import os
+import sys
+
+project_path = os.path.abspath("..")
+sys.path.insert(0, project_path)
+
 from tqdm import tqdm
 from torchvision import transforms
-from torchvision.datasets import MNIST
 import torch.cuda
 from Dataset_CNN.CNN import EmbeddingNetwork, ScoreFolder
-import numpy as np
 from Visualisations.DF import DeepFeatures
-import matplotlib.pyplot as plt
 
 BATCH_SIZE = 100
 DATA_FOLDER = r'../../uob_image_set_10'
@@ -51,7 +56,7 @@ data_loader = torch.utils.data.DataLoader(image_data,
                                           shuffle=True)
 
 
-checkpoint = torch.load("..\Dataset_CNN/data/triplet.pth")
+checkpoint = torch.load("..\Dataset_CNN/data/small.pth")
 
 model = EmbeddingNetwork(checkpoint['emb_size'])
 model.load_state_dict(checkpoint['model_state_dict'])
