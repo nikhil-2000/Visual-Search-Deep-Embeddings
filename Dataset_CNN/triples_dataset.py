@@ -22,7 +22,7 @@ class ClothesFolder(ImageFolder):
     
     def __init__(self,root , transform=None):
         super(ClothesFolder, self).__init__(root=root, transform = transform)
-        name  = root.split("/")[-1]
+        name  = os.path.basename(os.path.normpath(root))
         if not any([name == p for p in os.listdir("data")]):
             g_e_m.generate_matrix(root, name)
 

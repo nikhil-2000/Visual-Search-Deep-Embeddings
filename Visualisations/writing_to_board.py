@@ -13,14 +13,14 @@ from Dataset_CNN.CNN import EmbeddingNetwork, ScoreFolder
 from Visualisations.DF import DeepFeatures
 
 BATCH_SIZE = 100
-DATA_FOLDER = r'../../uob_image_set_10'
+DATA_FOLDER = r'../../uob_image_set_100'
 IMGS_FOLDER = './Outputs/Images'
 EMBS_FOLDER = './Outputs/Embeddings'
 TB_FOLDER = './Outputs/Tensorboard'
 EXPERIMENT_NAME = 'UOB_IMAGE_SET_VIS'
 
-T_G_WIDTH = 50
-T_G_HEIGHT = 50
+T_G_WIDTH = 100
+T_G_HEIGHT = 100
 T_G_NUMCHANNELS = 3
 T_G_SEED = 1337
 
@@ -31,13 +31,13 @@ data_transforms = {
         transforms.RandomResizedCrop(input_size),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
     'val': transforms.Compose([
         transforms.Resize((T_G_HEIGHT, T_G_WIDTH)),
-        # transforms.CenterCrop(input_size),
+        transforms.CenterCrop(input_size),
         transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
 }
 
@@ -56,7 +56,7 @@ data_loader = torch.utils.data.DataLoader(image_data,
                                           shuffle=True)
 
 
-checkpoint = torch.load("..\Dataset_CNN/data/small.pth")
+checkpoint = torch.load("..\Dataset_CNN/data/100_images.pth")
 
 model = EmbeddingNetwork(checkpoint['emb_size'])
 model.load_state_dict(checkpoint['model_state_dict'])
@@ -88,13 +88,6 @@ for step, (batch_imgs, batch_labels, batch_paths) in tqdm(enumerate(data_loader)
     # plt.imshow(first_img.permute(1, 2, 0).cpu())
     # plt.show()
 
-    if all_names is None:
-        all_names = batch_names
-    else:
-        all_names.extend(batch_names)
-
-
     DF.write_embeddings(x = batch_imgs.to(device), labels = batch_names, outsize=(T_G_HEIGHT, T_G_HEIGHT))
 
-
-DF.create_tensorboard_log(all_names)
+DF.create_tensorboard_log()

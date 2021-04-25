@@ -135,7 +135,7 @@ class DeepFeatures(torch.nn.Module):
         self.writer = SummaryWriter(logdir=logdir)
         return (True)
 
-    def create_tensorboard_log(self, img_names):
+    def create_tensorboard_log(self):
 
         '''
         Write all images and embeddings from imgs_folder and embs_folder into a tensorboard log
@@ -148,19 +148,20 @@ class DeepFeatures(torch.nn.Module):
 
         ## Read in
         all_embeddings = [np.load(os.path.join(self.embs_folder, p)) for p in os.listdir(self.embs_folder) if
-                          p.endswith('.npy') and p.replace(".npy", "") in img_names]
+                          p.endswith('.npy')]
         all_images = [np.load(os.path.join(self.imgs_folder, p)) for p in os.listdir(self.imgs_folder) if
-                      p.endswith('.npy') and p.replace(".npy", "") in img_names]
+                      p.endswith('.npy')]
         all_images = [np.moveaxis(a, 2, 0) for a in all_images]  # (HWC) -> (CHW)
-
+        all_names = [os.path.join(self.imgs_folder, p) for p in os.listdir(self.imgs_folder) if
+                      p.endswith('.npy')]
+        all_names = [os.path.basename(os.path.normpath(path)).replace(".npy", "").split("_")[0] for path in all_names]
         ## Stack into tensors
         all_embeddings = torch.Tensor(all_embeddings)
         all_images = torch.Tensor(all_images)
 
         print(all_embeddings.shape)
         print(all_images.shape)
-        img_names = [name[:-2] for name in img_names]
-        self.writer.add_embedding(all_embeddings,metadata = img_names,  label_img=all_images, global_step = self.step)
+        self.writer.add_embedding(all_embeddings,metadata = all_names,  label_img=all_images, global_step = self.step)
         self.step += 1
 
 

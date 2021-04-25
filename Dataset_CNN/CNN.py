@@ -57,7 +57,7 @@ data_transforms = {
         transforms.RandomResizedCrop(input_size),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
     'val': transforms.Compose([
         transforms.Resize(input_size),
@@ -65,21 +65,6 @@ data_transforms = {
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
-}
-
-data_transforms = {
-    'train': transforms.Compose([
-        transforms.Resize((T_G_HEIGHT, T_G_WIDTH)),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-    'val': transforms.Compose([
-        transforms.Resize((T_G_HEIGHT, T_G_WIDTH)),
-        # transforms.CenterCrop(input_size),
-        transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
 }
 
 def set_parameter_requires_grad(model, feature_extracting):
