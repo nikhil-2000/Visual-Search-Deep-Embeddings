@@ -4,7 +4,7 @@ import os
 import cv2
 from tensorboardX import SummaryWriter
 import shutil
-
+import pandas as pd
 
 class DeepFeatures(torch.nn.Module):
     '''
@@ -57,6 +57,9 @@ class DeepFeatures(torch.nn.Module):
         if len(os.listdir(self.embs_folder)) != 0:
             "Embeddings folder must be empty"
             clear_folder(self.embs_folder)
+
+        self.labels_to_folder, self.folder_to_labels = self.convert_to_dict(pd.read_csv("../labelling_images/labelled.csv"))
+
 
     def generate_embeddings(self, x):
         '''
@@ -158,11 +161,24 @@ class DeepFeatures(torch.nn.Module):
         ## Stack into tensors
         all_embeddings = torch.Tensor(all_embeddings)
         all_images = torch.Tensor(all_images)
-
+        all_names_with_labels = [(name, self.folder_to_labels[name]) for name in all_names]
         print(all_embeddings.shape)
         print(all_images.shape)
-        self.writer.add_embedding(all_embeddings,metadata = all_names,  label_img=all_images, global_step = self.step)
+        self.writer.add_embedding(all_embeddings,metadata = all_names_with_labels,  label_img=all_images, global_step = self.step, metadata_header = ["Folder","Label"])
         self.step += 1
+
+    def convert_to_dict(self, labelled_df):
+        label_to_folder = {}
+        folder_to_label = {}
+        for index, row in labelled_df.iterrows():
+            label, folder = row["label"], str(row["folder"])
+            if not (label in label_to_folder.keys()):
+                label_to_folder[label] = []
+
+            label_to_folder[label].append(folder)
+            folder_to_label[folder] = label
+
+        return label_to_folder, folder_to_label
 
 
 def tensor2np(tensor, resize_to=None):
@@ -184,6 +200,9 @@ def tensor2np(tensor, resize_to=None):
         out_array = cv2.resize(out_array, dsize=resize_to, interpolation=cv2.INTER_CUBIC)
 
     return (out_array)
+
+
+
 
 def clear_folder(folder):
     for file in os.listdir(folder):
