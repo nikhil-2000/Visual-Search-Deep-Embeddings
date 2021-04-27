@@ -18,6 +18,7 @@ import torch.nn.functional as F
 from torchvision import transforms, models, datasets
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import ImageFolder
+from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
 import PIL
 
 # Misc. Necessities
@@ -72,43 +73,10 @@ def set_parameter_requires_grad(model, feature_extracting):
         for param in model.parameters():
             param.requires_grad = False
 
-class Identity(torch.nn.Module):
-    def init(self):
-        super(Identity, self).init()
-
-    def forward(self, x):
-        return x
 
 
 
-class EmbeddingNetwork(nn.Module):
-    def __init__(self, emb_dim = 128, is_pretrained=True, freeze_params=True):
-        super(EmbeddingNetwork, self).__init__()
 
-        self.backbone = models.resnet152(pretrained=is_pretrained)
-        set_parameter_requires_grad(self.backbone, freeze_params)
-
-        # replace the last classification layer with an embedding layer.
-        # num_ftrs = self.backbone.fc.in_features
-        # self.backbone.fc = nn.Linear(num_ftrs, emb_dim)
-        self.backbone.fc = Identity()
-
-        # make that layer trainable
-        if freeze_params:
-            for param in self.backbone.fc.parameters():
-                param.requires_grad = True
-        elif not freeze_params:
-            for param in self.backbone.parameters():
-                param.requires_grad = True
-
-        self.inputsize = T_G_WIDTH
-
-    def forward(self, x):
-
-        x = self.backbone(x)
-        x = F.normalize(x, p=2.0, dim=1)
-
-        return x
 
 class TripletLoss(nn.Module):
     def __init__(self, margin = 1.0):
@@ -159,7 +127,7 @@ def learn(argv):
     train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True, num_workers=1)
 
     # Allow all parameters to be fit
-    model = EmbeddingNetwork(emb_dim=emb_size, freeze_params=False)
+    model = EmbeddingNetwork(freeze_params=False)
 
     # model = torch.jit.script(model).to(device) # send model to GPU
     model = model.to(device)  # send model to GPU
@@ -177,10 +145,10 @@ def learn(argv):
 
     for epoch in tqdm(range(numepochs), desc="Epochs"):
         running_loss = []
-
+        train_ds.pick_batches(100)
+        train_ds.calc_distances()
         for step, (anchor_img, positive_img, negative_img) in enumerate(
                 tqdm(train_loader, desc="Training", leave=False)):
-            train_ds.pick_batch(100)
             anchor_img = anchor_img.to(device)  # send image to GPU
             positive_img = positive_img.to(device)  # send image to GPU
             negative_img = negative_img.to(device)  # send image to GPU
