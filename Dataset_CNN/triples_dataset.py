@@ -29,7 +29,7 @@ class ClothesFolder(ImageFolder):
         self.labels_to_folder, self.folder_to_labels = self.convert_to_dict(pd.read_csv("../labelling_images/labelled.csv"))
 
         self.data_path = "data/" + name + "/"
-
+        self.remaining_folders = list(self.folder_to_labels.keys())
 
         self.images = {}
         for dir in self.classes:
@@ -44,6 +44,9 @@ class ClothesFolder(ImageFolder):
         for c in self.classes:
             ci = self.class_to_idx[c]
             self.classdictsize[ci] = len(self.images[ci])
+
+    def reset_remaining_folders(self):
+        self.remaining_folders = list(self.folder_to_labels.keys())
 
 
 
@@ -108,6 +111,19 @@ class ClothesFolder(ImageFolder):
         if len(row) == 0: row = list(negative_error_diffs.items())
         k_smallest_idx = sorted(row,key=lambda x: x[1])[0:k]
         return k_smallest_idx
+
+    def get_closest_v2(self, image_name, k, batch_size = 100):
+        print(self.classes)
+        print(self.samples)
+
+    def pick_batch(self, size):
+        if size > len(self.remaining_folders):
+            self.reset_remaining_folders()
+
+        self.batch_folders = random.sample(self.remaining_folders, size)
+        for folder in self.batch_folders:
+            self.remaining_folders.remove(folder)
+        print("Picked from Batch")
 
     def get_probabilties(self, distances , exp_sign = 1):
         exponetial_list = []
@@ -215,18 +231,18 @@ def showImages(net, old):
 
 
 if __name__ == '__main__':
-    images_path = "../../uob_image_set"
+    images_path = "../../uob_image_set_10"
 
     transform = transforms.Resize((1333//5,1000//5))
     # dataset = old.ClothesFolder(images_path, transform = transform)
     dataset_net = ClothesFolder(images_path, transform = transform)
 
-
-    for i in range(5):
-        i = random.randint(0, 1500)
-        print(i)
-        test_net = dataset_net[i]
-        # test_old = dataset.output_k_closest(i,10)
-        showImages(test_net, [])
-    # print(test)
+    dataset_net.get_closest_v2("11059585",10)
+    # for i in range(5):
+    #     i = random.randint(0, 10)
+    #     print(i)
+    #     test_net = dataset_net[i]
+    #     # test_old = dataset.output_k_closest(i,10)
+    #     showImages(test_net, [])
+    # # print(test)
 

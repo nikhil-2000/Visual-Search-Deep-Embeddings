@@ -177,8 +177,10 @@ def learn(argv):
 
     for epoch in tqdm(range(numepochs), desc="Epochs"):
         running_loss = []
+
         for step, (anchor_img, positive_img, negative_img) in enumerate(
                 tqdm(train_loader, desc="Training", leave=False)):
+            train_ds.pick_batch(100)
             anchor_img = anchor_img.to(device)  # send image to GPU
             positive_img = positive_img.to(device)  # send image to GPU
             negative_img = negative_img.to(device)  # send image to GPU
@@ -198,6 +200,7 @@ def learn(argv):
 
             running_loss.append(loss.cpu().detach().numpy())
 
+        train_ds.reset_remaining_folders()
         print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, np.mean(running_loss)))
 
     torch.save({
