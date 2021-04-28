@@ -46,8 +46,8 @@ class ClothesFolder(ImageFolder):
     def __init__(self, root, transform=None):
         super(ClothesFolder, self).__init__(root=root, transform=transform)
         name = os.path.basename(os.path.normpath(root))
-        if not any([name == p for p in os.listdir("data")]):
-            g_e_m.generate_matrix(root, name)
+        # if not any([name == p for p in os.listdir("data")]):
+        #     g_e_m.generate_matrix(root, name)
 
         self.labels_to_folder, self.folder_to_labels = self.convert_to_dict(
             pd.read_csv("../labelling_images/labelled.csv"))
