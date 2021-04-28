@@ -75,9 +75,6 @@ def set_parameter_requires_grad(model, feature_extracting):
 
 
 
-
-
-
 class TripletLoss(nn.Module):
     def __init__(self, margin = 1.0):
         super(TripletLoss, self).__init__()
@@ -118,7 +115,7 @@ def learn(argv):
     numepochs = int(argv[3])
     outpath = argv[4]
 
-    margin = 1.0
+    margin = 0.5
 
     print('Triplet embeding training session. Inputs: ' + in_t_folder + ', ' + str(emb_size) + ', ' + str(
         batch) + ', ' + str(numepochs) + ', ' + str(margin) + ', ' + outpath)
@@ -132,7 +129,7 @@ def learn(argv):
     # model = torch.jit.script(model).to(device) # send model to GPU
     model = model.to(device)  # send model to GPU
 
-    optimizer = optim.Adadelta(model.parameters())  # optim.Adam(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
     # criterion = torch.jit.script(TripletLoss(margin=10.0))
     criterion = TripletLoss(margin=margin)
 
@@ -143,12 +140,14 @@ def learn(argv):
         epoch = 0
         loss = 0
 
+    search_size = 50
     for epoch in tqdm(range(numepochs), desc="Epochs"):
         running_loss = []
-        train_ds.pick_batches(100)
+        train_ds.pick_batches(search_size)
         train_ds.calc_distances()
         for step, (anchor_img, positive_img, negative_img) in enumerate(
-                tqdm(train_loader, desc="Training", leave=False)):
+                tqdm(train_loader, desc="Training", leave=True, position=0)):
+
             anchor_img = anchor_img.to(device)  # send image to GPU
             positive_img = positive_img.to(device)  # send image to GPU
             negative_img = negative_img.to(device)  # send image to GPU
@@ -168,16 +167,18 @@ def learn(argv):
 
             running_loss.append(loss.cpu().detach().numpy())
 
-        train_ds.reset_remaining_folders()
         print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, np.mean(running_loss)))
 
-    torch.save({
-        'emb_size': emb_size,
-        'epoch': epoch,
-        'model_state_dict': model.state_dict(),
-        'optimzier_state_dict': optimizer.state_dict(),
-        'loss': loss
-    }, outpath + '.pth')
+
+        torch.save({
+            'emb_size': emb_size,
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimzier_state_dict': optimizer.state_dict(),
+            'loss': loss
+        }, outpath + '.pth')
+
+        train_ds.modelfile = outpath + '.pth'
 
     return
 

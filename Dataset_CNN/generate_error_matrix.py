@@ -106,9 +106,9 @@ def get_diff_dicts(embeddings, image_names):
     emb_diff = dict([(name, {}) for name in image_names])
     pos_diff = dict([(name, {}) for name in image_names])
 
-    print()
-    print("Calculating Diffs...")
-    for i in trange(0, n):
+    # print()
+    # print("Calculating Diffs...")
+    for i in range(0, n):
         folder_name = image_names[i].split("_")[0]
         for j in range(0, i):
             comparison_name = image_names[j].split("_")[0]

@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 import torchvision.models as models
-
+import torch.nn.functional as F
 
 def set_parameter_requires_grad(model, feature_extracting):
     if (feature_extracting):
