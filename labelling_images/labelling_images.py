@@ -38,7 +38,8 @@ labels = ['Accessory',
           'Tie',
           'Ring',
           'Socks',
-          'Boots']
+          'Boots',
+          'Scarf']
 images_path = "../../uob_image_set"
 
 
