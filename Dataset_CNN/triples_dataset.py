@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+import sys, os
+
+project_path = os.path.abspath("..")
+sys.path.insert(0, project_path)
 import random
 
 import numpy as np
@@ -5,27 +10,56 @@ from PIL import Image
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
 import Dataset_CNN.generate_error_matrix as g_e_m
-import os
 import torch
 import pickle
 import pandas as pd
+from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+
 ##Generating Triples method from this article https://towardsdatascience.com/image-similarity-using-triplet-loss-3744c0f67973
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 torch.cuda.empty_cache()
 
-class ClothesFolder(ImageFolder):
-    
-    def __init__(self,root , transform=None):
-        super(ClothesFolder, self).__init__(root=root, transform = transform)
-        name  = root.split("/")[-1]
-        if not any([name == p for p in os.listdir("data")]):
-            g_e_m.generate_matrix(root, name)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.labels_to_folder, self.folder_to_labels = self.convert_to_dict(pd.read_csv("../labelling_images/labelled.csv"))
+input_size = 100
+data_transforms = {
+    'train': transforms.Compose([
+        transforms.RandomResizedCrop(input_size),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ]),
+    'val': transforms.Compose([
+        transforms.Resize(input_size),
+        transforms.CenterCrop(input_size),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ]),
+}
+
+
+class ClothesFolder(ImageFolder):
+
+    def __init__(self, root, transform=None):
+        super(ClothesFolder, self).__init__(root=root, transform=transform)
+        name = os.path.basename(os.path.normpath(root))
+        # if not any([name == p for p in os.listdir("data")]):
+        #     g_e_m.generate_matrix(root, name)
+
+        self.labels_to_folder, self.folder_to_labels = self.convert_to_dict(
+            pd.read_csv("../labelling_images/labelled.csv"))
 
         self.data_path = "data/" + name + "/"
+        self.remaining_folders = list(self.folder_to_labels.keys())
 
+        self.folder_to_batch = {}
+        self.batches = []
+        self.batch_distances = []
+
+        self.modelfile = None
 
         self.images = {}
         for dir in self.classes:
@@ -41,39 +75,43 @@ class ClothesFolder(ImageFolder):
             ci = self.class_to_idx[c]
             self.classdictsize[ci] = len(self.images[ci])
 
+    def load_model(self):
 
+        model = EmbeddingNetwork()
+        if self.modelfile is not None:
+            print("Loading")
+            checkpoint = torch.load(self.modelfile)
+            print("Epoch:", checkpoint["epoch"])
+            model.load_state_dict(checkpoint['model_state_dict'])
+            # model = torch.jit.script(model).to(device) # send model to GPU
+        return model
 
-    def load_and_transform(self, path, img_name):
-        img = Image.open(path + "/" + img_name)
-
-        if self.transform:
-            img =  self.transform(img)
-
-        return np.array(img)
-
-    def __getitem__(self,index):
+    def __getitem__(self, index):
         anchor_path, anchor_target = self.samples[index]
         anchor_name = anchor_path.split("\\")[-1].split(".")[0]
+        folder_name = anchor_name.split("_")[0]
+        batch_idx = self.folder_to_batch[folder_name]
 
         pos_paths = [i for i in self.images[anchor_target] if i != anchor_path]
-        positive_error_diffs = self.load_diff_dict("positives", anchor_name)
+        positive_error_diffs = self.batch_distances[batch_idx][1][anchor_name + ".jpg"]
+
         positives = list(positive_error_diffs.items())
         names, distances = list(zip(*positives))
-        weights = self.get_probabilties(distances, exp_sign = 1 )
-        pos_path = np.random.choice(pos_paths, p = weights)
+        weights = self.get_probabilties(distances, exp_sign=1)
+        pos_path = np.random.choice(pos_paths, p=weights)
 
-
-        #to do next:weight closer images higher in random choice
-        negatives = self.get_closest(anchor_name,5)
+        # to do next:weight closer images higher in random choice
+        negatives = self.get_closest_v2(anchor_name, 5)
+        # negatives = self.get_closest(anchor_name,5)
         names, distances = list(zip(*negatives))
-        weights = self.get_probabilties(distances, exp_sign = 1 )
-        neg_name = np.random.choice(names, p = weights)
+        weights = self.get_probabilties(distances, exp_sign=1)
+        neg_name = np.random.choice(names, p=weights)
         neg_idx = self.class_to_idx[neg_name.split("_")[0]]
         paths_neg_dir = self.images[neg_idx]
         neg_path = [p for p in paths_neg_dir if neg_name in p][0]
-        #find our class
-        #from our class, find other classes which are similar based on fft of the first image in the class
-        #return a list of x classes and for each class, choose a random image in the class as a negative
+        # find our class
+        # from our class, find other classes which are similar based on fft of the first image in the class
+        # return a list of x classes and for each class, choose a random image in the class as a negative
         # print(pos_path)
 
         # Load the data for these samples.
@@ -87,12 +125,10 @@ class ClothesFolder(ImageFolder):
             p_sample = self.transform(p_sample)
             n_sample = self.transform(n_sample)
 
-        print(anchor_path,neg_path)
-
         # note that we do not return the label!
         return a_sample, p_sample, n_sample
 
-    def get_closest(self,image_name, k):
+    def get_closest(self, image_name, k):
         negative_error_diffs = self.load_diff_dict("negatives", image_name)
         isLabelled = image_name[:8] in self.folder_to_labels.keys()
 
@@ -100,11 +136,87 @@ class ClothesFolder(ImageFolder):
         if isLabelled:
             label = self.folder_to_labels[image_name[:8]]
             other_folders = self.labels_to_folder[label]
-            row = list(filter(lambda r: r[0][:8] in other_folders,row))
-        k_smallest_idx = sorted(row,key=lambda x: x[1])[0:k]
+            row = list(filter(lambda r: r[0][:8] in other_folders, row))
+
+        if len(row) == 0: row = list(negative_error_diffs.items())
+        k_smallest_idx = sorted(row, key=lambda x: x[1])[0:k]
         return k_smallest_idx
 
-    def get_probabilties(self, distances , exp_sign = 1):
+    def get_closest_v2(self, image_name, k):
+        folder_name = image_name.split("_")[0]
+        batch_idx = self.folder_to_batch[folder_name]
+        batch_distances = self.batch_distances[batch_idx][0][image_name + ".jpg"]
+
+        isLabelled = folder_name in self.folder_to_labels.keys()
+
+        row = list(batch_distances.items())
+        if len(row) == 0:
+            folder_names = random.choices(list(self.class_to_idx.keys()), k=k)
+            return [(name, 1) for name in folder_names]
+
+        if isLabelled:
+            label = self.folder_to_labels[image_name[:8]]
+            other_folders = self.labels_to_folder[label]
+            row = list(filter(lambda r: r[0][:8] in other_folders, row))
+
+        if len(row) == 0: row = list(batch_distances.items())
+        k_closest = sorted(row, key=lambda x: x[1])[0:k]
+        return k_closest
+
+    def pick_batches(self, size):
+        all_folders = list(self.class_to_idx.keys())
+        n = len(all_folders)
+        self.batches = [[] for i in range(n // size + 1)]
+        random.shuffle(all_folders)
+        idx = 0
+        for i in range(0, n, size):
+            batch = all_folders[i: i + size]
+            for folder in batch:
+                self.folder_to_batch[folder] = idx
+
+            self.batches[idx] = batch
+            idx += 1
+
+        while not self.batches[-1]: self.batches.remove([])
+
+    def calc_distances(self):
+        model = self.load_model()
+
+        model = model.to(device)
+        model.eval()
+        self.batch_distances = [({}, {}) for x in range(len(self.batches))]
+
+        for i, batch in enumerate(tqdm(self.batches, leave=True, position=0, desc="Batch Distances")):
+            embeddings, image_names = self.feed_batch(batch, model)
+            neg_diff, pos_diff, _, _ = g_e_m.get_diff_dicts(embeddings, image_names)
+            self.batch_distances[i] = (neg_diff, pos_diff)
+
+    def feed_batch(self, batch, model):
+        embeddings = []
+        image_names = []
+
+        for folder in batch:
+            folder_path = os.path.join(self.root, folder)
+            for name in os.listdir(folder_path):
+                image_names.append(name)
+                image_path = os.path.join(folder_path, name)
+                img = self.loader(image_path)
+                if self.transform is not None:
+                    img = self.transform(img)
+                    c, w, h = img.shape
+                    img = torch.reshape(img, (1, c, w, h))
+
+                with torch.no_grad():
+                    output = model(img.to(device))
+                    cpu_tensor = output.detach().cpu()
+                    pos = cpu_tensor[0].tolist()
+                    embeddings.append(pos)
+
+        embeddings = np.asarray(embeddings)
+
+        return embeddings, image_names
+
+    def get_probabilties(self, distances, exp_sign=1):
         exponetial_list = []
         for i in distances:
             exponetial = np.exp(exp_sign * i)
@@ -124,8 +236,7 @@ class ClothesFolder(ImageFolder):
             # have to specify it.
             return pickle.load(f)
 
-
-    def test_output_k_closest(self, idx, k = 5):
+    def test_output_k_closest(self, idx, k=5):
 
         anchor_path, anchor_target = self.samples[idx]
 
@@ -133,12 +244,11 @@ class ClothesFolder(ImageFolder):
         # to do next:weight closer images higher in random choice
         neg_names = self.get_closest(anchor_class, k)
         neg_paths = []
-        for name,_ in neg_names:
+        for name, _ in neg_names:
             neg_idx = self.class_to_idx[name.split("_")[0]]
             paths_neg_dir = self.images[neg_idx]
             neg_path = [p for p in paths_neg_dir if name in p][0]
             neg_paths.append(neg_path)
-
 
         # Load the data for these samples.
         a_sample = self.loader(anchor_path)
@@ -150,14 +260,13 @@ class ClothesFolder(ImageFolder):
         # apply transforms
         if self.transform is not None:
             a_sample = self.transform(a_sample)
-            for i,img in enumerate(neg_samples):
+            for i, img in enumerate(neg_samples):
                 neg_samples[i] = self.transform(img)
 
         # note that we do not return the label!
-        return [a_sample] +  neg_samples
+        return [a_sample] + neg_samples
 
     def convert_to_dict(self, labelled_df):
-        print(labelled_df.columns)
         label_to_folder = {}
         folder_to_label = {}
         for index, row in labelled_df.iterrows():
@@ -182,47 +291,63 @@ def show_example_triplet(triple):
     dst.paste(negative_im, (anchor_im.width + positive_im.width, 0))
     dst.show()
 
+
 def getListImages(images):
-    h,w = images[0].height, images[0].width
+    h, w = images[0].height, images[0].width
     dst = Image.new('RGB', (len(images) * w, h))
     x = 0
     y = 0
     for i in images:
-        dst.paste(i, (x,y))
-        x+= w
+        dst.paste(i, (x, y))
+        x += w
 
     return dst
 
-def showImages(net, old):
-    net_images = getListImages(net)
-    # old_images = getListImages(old)
-    #
-    # h,w = net_images.height , net_images.width
-    # dst = Image.new('RGB', ( w, h * 2))
-    # x = 0
-    # y = 0
-    # for i in [net_images]:
-    #     dst.paste(i, (x, y))
-    #     y += h
 
-    net_images.show()
+def showImages(images, size=(100, 100)):
+    h, w = size
+    dst = Image.new('RGB', (len(images) * w, h))
+    x = 0
+    y = 0
+
+    for i in images:
+        i = i.resize(size)
+        dst.paste(i, (x, y))
+        x += w
+
+    dst.show()
 
 
+def tensor_to_image(tensor):
+    tensor = tensor * 255
+    c, w, h = tensor.shape
+    tensor = np.array(tensor, dtype=np.uint8)
+    if np.ndim(tensor) > 3:
+        assert tensor.shape[0] == 1
+        tensor = tensor[0]
+    return Image.fromarray(tensor, 'RGB')
 
 
 if __name__ == '__main__':
-    images_path = "../../uob_image_set"
+    images_path = "../../uob_image_set_10"
 
-    transform = transforms.Resize((1333//5,1000//5))
+    transform = transforms.Resize((1333 // 5, 1000 // 5))
     # dataset = old.ClothesFolder(images_path, transform = transform)
-    dataset_net = ClothesFolder(images_path, transform = transform)
-
-
-    for i in range(5):
-        i = random.randint(0, 1500)
+    dataset_net = ClothesFolder(images_path, transform=data_transforms["val"])
+    dataset_net.pick_batches(2)
+    dataset_net.calc_distances()
+    fig, axs = plt.subplots(1, 3)
+    for i in range(1):
+        i = random.randint(0, 10)
         print(i)
-        test_net = dataset_net[i]
-        # test_old = dataset.output_k_closest(i,10)
-        showImages(test_net, [])
-    # print(test)
+        anchor, pos, neg = dataset_net[i]
+        pil_triplet = []
+        for img in [anchor, pos, neg]:
+            img = img.permute(1, 2, 0)
+            pil_img = tensor_to_image(img)
+            pil_triplet.append(pil_img)
 
+        pil_img.show()
+        # test_old = dataset.output_k_closest(i,10)
+        showImages(pil_triplet, size=(100, 100))
+    # print(test)

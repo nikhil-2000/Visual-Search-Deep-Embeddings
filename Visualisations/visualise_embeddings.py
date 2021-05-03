@@ -81,8 +81,8 @@ def dist_dict(scores, files, outfile):
 
                 dist_dict[f1][f2] = dist_dict[f2][f1] = dist
 
-    np.save("../Dataset_CNN/data/" + outfile + ".npy", dist_dict)
-
+    np.save("../Dataset_CNN/data/" + outfile + "_diffs.npy", dist_dict)
+    return dist_dict
 
 def get_accuracy(file, dist_dict, k = 5):
     name = file.split("\\")[-2]
@@ -126,19 +126,20 @@ def show_example(files, dist_dict, k = 7, file = None):
     showImages(imgs)
 
 generate_dict = True
-outfile = "small"
+outfile = "1000_images"
 scores, labels, files = load_data(outfile)
 if generate_dict:
-    dist_dict(scores, files, outfile)
-# for i in range(5): show_example(files, diffs )
-diffs = np.load("../Dataset_CNN/data/" + outfile + ".npy", allow_pickle=True).item()
+    diffs = dist_dict(scores, files, outfile)
+else:
+    diffs = np.load("../Dataset_CNN/data/" + outfile + "_diffs.npy", allow_pickle=True)
+
 accuracies = []
 max_ac = 0
 k = 4
 best = ""
 random.shuffle(files)
-for file in files:
-    # file =random.choice(files)
+for i in range(500):
+    file =random.choice(files)
     ac = get_accuracy(file, diffs, k)
     accuracies.append(ac)
 

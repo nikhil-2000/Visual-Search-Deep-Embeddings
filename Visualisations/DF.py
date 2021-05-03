@@ -4,7 +4,7 @@ import os
 import cv2
 from tensorboardX import SummaryWriter
 import shutil
-
+import pandas as pd
 
 class DeepFeatures(torch.nn.Module):
     '''
@@ -57,6 +57,9 @@ class DeepFeatures(torch.nn.Module):
         if len(os.listdir(self.embs_folder)) != 0:
             "Embeddings folder must be empty"
             clear_folder(self.embs_folder)
+
+        self.labels_to_folder, self.folder_to_labels = self.convert_to_dict(pd.read_csv("../labelling_images/labelled.csv"))
+
 
     def generate_embeddings(self, x):
         '''
@@ -135,7 +138,7 @@ class DeepFeatures(torch.nn.Module):
         self.writer = SummaryWriter(logdir=logdir)
         return (True)
 
-    def create_tensorboard_log(self, img_names):
+    def create_tensorboard_log(self):
 
         '''
         Write all images and embeddings from imgs_folder and embs_folder into a tensorboard log
@@ -148,20 +151,34 @@ class DeepFeatures(torch.nn.Module):
 
         ## Read in
         all_embeddings = [np.load(os.path.join(self.embs_folder, p)) for p in os.listdir(self.embs_folder) if
-                          p.endswith('.npy') and p.replace(".npy", "") in img_names]
+                          p.endswith('.npy')]
         all_images = [np.load(os.path.join(self.imgs_folder, p)) for p in os.listdir(self.imgs_folder) if
-                      p.endswith('.npy') and p.replace(".npy", "") in img_names]
+                      p.endswith('.npy')]
         all_images = [np.moveaxis(a, 2, 0) for a in all_images]  # (HWC) -> (CHW)
-
+        all_names = [os.path.join(self.imgs_folder, p) for p in os.listdir(self.imgs_folder) if
+                      p.endswith('.npy')]
+        all_names = [os.path.basename(os.path.normpath(path)).replace(".npy", "").split("_")[0] for path in all_names]
         ## Stack into tensors
         all_embeddings = torch.Tensor(all_embeddings)
         all_images = torch.Tensor(all_images)
-
+        all_names_with_labels = [(name, self.folder_to_labels[name]) for name in all_names]
         print(all_embeddings.shape)
         print(all_images.shape)
-        img_names = [name[:-2] for name in img_names]
-        self.writer.add_embedding(all_embeddings,metadata = img_names,  label_img=all_images, global_step = self.step)
+        self.writer.add_embedding(all_embeddings,metadata = all_names_with_labels,  label_img=all_images, global_step = self.step, metadata_header = ["Folder","Label"])
         self.step += 1
+
+    def convert_to_dict(self, labelled_df):
+        label_to_folder = {}
+        folder_to_label = {}
+        for index, row in labelled_df.iterrows():
+            label, folder = row["label"], str(row["folder"])
+            if not (label in label_to_folder.keys()):
+                label_to_folder[label] = []
+
+            label_to_folder[label].append(folder)
+            folder_to_label[folder] = label
+
+        return label_to_folder, folder_to_label
 
 
 def tensor2np(tensor, resize_to=None):
@@ -183,6 +200,9 @@ def tensor2np(tensor, resize_to=None):
         out_array = cv2.resize(out_array, dsize=resize_to, interpolation=cv2.INTER_CUBIC)
 
     return (out_array)
+
+
+
 
 def clear_folder(folder):
     for file in os.listdir(folder):

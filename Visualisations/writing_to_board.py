@@ -1,40 +1,23 @@
+from __future__ import absolute_import
+
+import os
+import sys
+
+project_path = os.path.abspath("..")
+sys.path.insert(0, project_path)
+
 from tqdm import tqdm
 from torchvision import transforms
-from torchvision.datasets import MNIST
 import torch.cuda
-from Dataset_CNN.CNN import EmbeddingNetwork, ScoreFolder
-import numpy as np
+from Dataset_CNN.CNN import EmbeddingNetwork, ScoreFolder, data_transforms
 from Visualisations.DF import DeepFeatures
-import matplotlib.pyplot as plt
 
-BATCH_SIZE = 100
-DATA_FOLDER = r'../../uob_image_set_10'
+BATCH_SIZE = 50
+DATA_FOLDER = r'../../uob_image_set_1000'
 IMGS_FOLDER = './Outputs/Images'
 EMBS_FOLDER = './Outputs/Embeddings'
 TB_FOLDER = './Outputs/Tensorboard'
 EXPERIMENT_NAME = 'UOB_IMAGE_SET_VIS'
-
-T_G_WIDTH = 50
-T_G_HEIGHT = 50
-T_G_NUMCHANNELS = 3
-T_G_SEED = 1337
-
-input_size = T_G_WIDTH
-
-data_transforms = {
-    'train': transforms.Compose([
-        transforms.RandomResizedCrop(input_size),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-    'val': transforms.Compose([
-        transforms.Resize((T_G_HEIGHT, T_G_WIDTH)),
-        # transforms.CenterCrop(input_size),
-        transforms.ToTensor(),
-        # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-}
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if device.type == "cuda":
@@ -51,7 +34,7 @@ data_loader = torch.utils.data.DataLoader(image_data,
                                           shuffle=True)
 
 
-checkpoint = torch.load("..\Dataset_CNN/data/triplet.pth")
+checkpoint = torch.load("..\Dataset_CNN/data/1000_images.pth")
 
 model = EmbeddingNetwork(checkpoint['emb_size'])
 model.load_state_dict(checkpoint['model_state_dict'])
@@ -83,13 +66,6 @@ for step, (batch_imgs, batch_labels, batch_paths) in tqdm(enumerate(data_loader)
     # plt.imshow(first_img.permute(1, 2, 0).cpu())
     # plt.show()
 
-    if all_names is None:
-        all_names = batch_names
-    else:
-        all_names.extend(batch_names)
+    DF.write_embeddings(x = batch_imgs.to(device), labels = batch_names, outsize=(100, 100))
 
-
-    DF.write_embeddings(x = batch_imgs.to(device), labels = batch_names, outsize=(T_G_HEIGHT, T_G_HEIGHT))
-
-
-DF.create_tensorboard_log(all_names)
+DF.create_tensorboard_log()
