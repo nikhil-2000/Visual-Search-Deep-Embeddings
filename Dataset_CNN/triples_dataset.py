@@ -98,14 +98,16 @@ class ClothesFolder(ImageFolder):
         positives = list(positive_error_diffs.items())
         names, distances = list(zip(*positives))
         weights = self.get_probabilties(distances, exp_sign=1)
-        pos_path = np.random.choice(pos_paths, p=weights)
-
+        # pos_path = np.random.choice(pos_paths, p=weights)
+        pos_path = pos_paths[-1]
         # to do next:weight closer images higher in random choice
         negatives = self.get_closest_v2(anchor_name, 5)
+
         # negatives = self.get_closest(anchor_name,5)
         names, distances = list(zip(*negatives))
         weights = self.get_probabilties(distances, exp_sign=1)
-        neg_name = np.random.choice(names, p=weights)
+        # neg_name = np.random.choice(names, p=weights)
+        neg_name = names[0]
         neg_idx = self.class_to_idx[neg_name.split("_")[0]]
         paths_neg_dir = self.images[neg_idx]
         neg_path = [p for p in paths_neg_dir if neg_name in p][0]

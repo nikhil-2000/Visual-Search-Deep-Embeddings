@@ -85,10 +85,10 @@ class TripletLoss(nn.Module):
 
     def forward(self, anchor: torch.Tensor, positive: torch.Tensor, negative: torch.Tensor) -> torch.Tensor:
         distance_positive = self.calc_euclidean(anchor, positive)
-        distance_negative_a = self.calc_euclidean(anchor, negative)
-        distance_negative_b = self.calc_euclidean(positive, negative)
+        distance_negative_anchor = self.calc_euclidean(anchor, negative)
+        distance_negative_positive = self.calc_euclidean(positive, negative)
 
-        losses = torch.relu(distance_positive - (distance_negative_a + distance_negative_b)/2.0 + self.margin)
+        losses = torch.relu(distance_positive - distance_negative_anchor + self.margin)
 
         return losses.mean()
 
