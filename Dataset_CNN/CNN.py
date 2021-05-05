@@ -140,11 +140,19 @@ def learn(argv):
         epoch = 0
         loss = 0
 
-    search_size = 50
+    search_size = 20
+    positive_losses = []
+    negative_losses = []
+
     for epoch in tqdm(range(numepochs), desc="Epochs"):
-        running_loss = []
         train_ds.pick_batches(search_size)
         train_ds.calc_distances()
+
+        positive_loss, negative_loss = train_ds.calculate_error_averages()
+        positive_losses.append(positive_loss)
+        negative_losses.append(negative_loss)
+
+        total_triples = 0
         for step, (anchor_img, positive_img, negative_img) in enumerate(
                 tqdm(train_loader, desc="Training", leave=True, position=0)):
 
@@ -164,11 +172,11 @@ def learn(argv):
             loss = criterion(anchor_out, positive_out, negative_out)
             loss.backward()
             optimizer.step()
+            total_triples += anchor_out.shape[0]
 
-            running_loss.append(loss.cpu().detach().numpy())
 
-        print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, np.mean(running_loss)))
 
+        print("Epoch: {}/{} - Loss: {:.4f} - Total triples: {}".format(epoch + 1, numepochs, positive_loss, total_triples))
 
         torch.save({
             'emb_size': emb_size,
@@ -179,6 +187,20 @@ def learn(argv):
         }, outpath + '.pth')
 
         train_ds.modelfile = outpath + '.pth'
+
+    train_ds.calc_distances()
+    positive_loss, negative_loss = train_ds.calculate_error_averages()
+    positive_losses.append(positive_loss)
+    negative_losses.append(negative_loss)
+
+    import matplotlib.pyplot as plt
+
+    fig, axs = plt.subplots(1,2)
+    xs = [i for i in range(numepochs + 1)]
+    print(positive_losses, negative_losses)
+    axs[0].plot(xs,negative_losses)
+    axs[1].plot(xs,positive_losses)
+    plt.show()
 
     return
 

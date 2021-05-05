@@ -79,9 +79,7 @@ class ClothesFolder(ImageFolder):
 
         model = EmbeddingNetwork()
         if self.modelfile is not None:
-            print("Loading")
             checkpoint = torch.load(self.modelfile)
-            print("Epoch:", checkpoint["epoch"])
             model.load_state_dict(checkpoint['model_state_dict'])
             # model = torch.jit.script(model).to(device) # send model to GPU
         return model
@@ -229,14 +227,7 @@ class ClothesFolder(ImageFolder):
             batch_weighted_triplet_list.append(weighted_triplet)
         return batch_weighted_triplet_list
 
-    def load_diff_dict(self, folder, image_name):
-        path = os.path.join(self.data_path, folder, image_name + ".pickle")
-        with open(path, 'rb') as f:
-            # The protocol version used is detected automatically, so we do not
-            # have to specify it.
-            return pickle.load(f)
-
-    def test_output_k_closest(self, idx, k=5):
+    def output_k_closest(self, idx, k=5):
 
         anchor_path, anchor_target = self.samples[idx]
 
@@ -279,8 +270,37 @@ class ClothesFolder(ImageFolder):
 
         return label_to_folder, folder_to_label
 
+    def calculate_error_averages(self):
+        positive_losses = []
+        negative_losses = []
+
+        for batch in self.batch_distances:
+            negative_distances_batch, positive_distances_batch = batch
+            pos_loss = calc_loss(positive_distances_batch)
+            neg_loss = calc_loss(negative_distances_batch, k = 50)
+            positive_losses.append(pos_loss)
+            negative_losses.append(neg_loss)
+
+        return np.mean(positive_losses), np.mean(negative_losses)
+
+
 
 # images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
+def calc_loss(diff_dict, k = None):
+    losses = [list(dict_loss.values()) for dict_loss in diff_dict.values()]
+    if k is not None:
+        for i,loss in enumerate(losses):
+            sorted_loss = sorted(loss)
+            losses[i] = sorted_loss[:10]
+
+    batch_losses = []
+    for loss in losses:
+        avg = np.mean(loss)
+        batch_losses.append(avg)
+
+    return np.mean(batch_losses)
+
+
 
 def show_example_triplet(triple):
     anchor_im, positive_im, negative_im = triple

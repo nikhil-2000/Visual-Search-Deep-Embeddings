@@ -34,7 +34,7 @@ data_loader = torch.utils.data.DataLoader(image_data,
                                           shuffle=True)
 
 
-checkpoint = torch.load("..\Dataset_CNN/data/1000_images.pth")
+checkpoint = torch.load("D:\My Docs/University\Applied Data Science\Project\Visual-Search-Deep-Embeddings/1000_images.pth")
 
 model = EmbeddingNetwork(checkpoint['emb_size'])
 model.load_state_dict(checkpoint['model_state_dict'])
