@@ -163,6 +163,15 @@ class ClothesFolder(ImageFolder):
         k_closest = sorted(row, key=lambda x: x[1])[0:k]
         return k_closest
 
+    def get_semi_hard_negative(self,image_name,pos_dist):
+        folder_name = image_name.split("_")[0]
+        batch_idx = self.folder_to_batch[folder_name]
+        batch_distances = self.batch_distances[batch_idx][0][image_name + ".jpg"]
+        isLabelled = folder_name in self.folder_to_labels.keys()
+
+        row = list(batch_distances.items())
+
+
     def pick_batches(self, size):
         all_folders = list(self.class_to_idx.keys())
         n = len(all_folders)
