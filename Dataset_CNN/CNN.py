@@ -4,22 +4,20 @@ import sys, os
 project_path = os.path.abspath("..")
 sys.path.insert(0, project_path)
 
-
 T_G_WIDTH = 100
 T_G_HEIGHT = 134
 T_G_NUMCHANNELS = 3
 T_G_SEED = 1337
 
-usagemessage = 'Usage: \n\t -learn <Train Folder> <embedding size> <batch size> <num epochs> <output model file> \n\t -extract <Model File> <Input Image Folder> <Output File Prefix (TXT)> <tsne perplexity (optional)>\n\t\tBuilds and scores a triplet-loss embedding model.'
+usagemessage = 'Usage: \n\t -learn <Train Folder> <batch size> <num epochs> <output model file root> <search size> <stop_label_training> \n\t -extract <Model File> <Input Image Folder> <Output File Prefix (TXT)> <tsne perplexity (optional)>\n\t\tBuilds and scores a triplet-loss embedding model.'
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
 from torchvision import transforms, models, datasets
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import ImageFolder
 from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
-import PIL
+import pandas as pd
 
 # Misc. Necessities
 import sys
@@ -37,6 +35,7 @@ from Dataset_CNN.triples_dataset import ClothesFolder
 
 # correct "too many files" error
 import torch.multiprocessing
+
 torch.multiprocessing.set_sharing_strategy('file_system')
 torch.cuda.empty_cache()
 
@@ -46,7 +45,7 @@ random.seed(T_G_SEED)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if device.type == "cuda":
-    print('Using GPU device: ' + torch.cuda.get_device_name(torch.cuda.current_device()) )
+    print('Using GPU device: ' + torch.cuda.get_device_name(torch.cuda.current_device()))
 else:
     print('Using CPU device.')
 
@@ -68,20 +67,20 @@ data_transforms = {
     ]),
 }
 
+
 def set_parameter_requires_grad(model, feature_extracting):
     if (feature_extracting):
         for param in model.parameters():
             param.requires_grad = False
 
 
-
 class TripletLoss(nn.Module):
-    def __init__(self, margin = 1.0):
+    def __init__(self, margin=1.0):
         super(TripletLoss, self).__init__()
         self.margin = margin
 
     def calc_euclidean(self, x1, x2):
-        return(x1 - x2).pow(2).sum(1)
+        return (x1 - x2).pow(2).sum(1)
 
     def forward(self, anchor: torch.Tensor, positive: torch.Tensor, negative: torch.Tensor) -> torch.Tensor:
         distance_positive = self.calc_euclidean(anchor, positive)
@@ -91,6 +90,7 @@ class TripletLoss(nn.Module):
         losses = torch.relu(distance_positive - distance_negative_anchor + self.margin)
 
         return losses.mean()
+
 
 class ScoreFolder(ImageFolder):
     def __init__(self, root: str, transform: Optional[Callable] = None):
@@ -103,24 +103,26 @@ class ScoreFolder(ImageFolder):
         # but it can simply be ignored.
         return img, label, self.samples[index][0]
 
+
 def learn(argv):
-    # <Train Folder> <embedding size> <batch size> <num epochs> <output model file root>
+    # <Train Folder> <batch size> <num epochs> <output model file root> <search size> <stop_label_training>
     if len(argv) < 5:
         print(usagemessage)
         return
 
     in_t_folder = argv[0]
-    emb_size = int(argv[1])
-    batch = int(argv[2])
-    numepochs = int(argv[3])
-    outpath = argv[4]
+    batch = int(argv[1])
+    numepochs = int(argv[2])
+    outpath = argv[3]
+    search_size = int(argv[4])
+    stop_label_training = int(argv[5])
 
     margin = 0.5
 
-    print('Triplet embeding training session. Inputs: ' + in_t_folder + ', ' + str(emb_size) + ', ' + str(
+    print('Triplet embeding training session. Inputs: ' + in_t_folder + ', ' + str(
         batch) + ', ' + str(numepochs) + ', ' + str(margin) + ', ' + outpath)
 
-    train_ds = ClothesFolder(root=in_t_folder, transform=data_transforms['train'])
+    train_ds = ClothesFolder(root=in_t_folder, transform=data_transforms['train'], margin=margin)
     train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True, num_workers=1)
 
     # Allow all parameters to be fit
@@ -140,22 +142,25 @@ def learn(argv):
         epoch = 0
         loss = 0
 
-    search_size = 20
     positive_losses = []
     negative_losses = []
+    cols = ["Epochs", "Pos_Loss", "Neg_Loss"]
+    lines = pd.DataFrame(columns=cols)
 
     for epoch in tqdm(range(numepochs), desc="Epochs"):
+        # Split data into "Batches" and calc distances
         train_ds.pick_batches(search_size)
         train_ds.calc_distances()
 
+        # Calc errors before training for this epoch and add to df
         positive_loss, negative_loss = train_ds.calculate_error_averages()
         positive_losses.append(positive_loss)
         negative_losses.append(negative_loss)
+        row = {cols[0]: epoch, cols[1]: positive_loss, cols[2]: negative_loss}
+        lines = lines.append(row, ignore_index=True)
 
-        total_triples = 0
         for step, (anchor_img, positive_img, negative_img) in enumerate(
                 tqdm(train_loader, desc="Training", leave=True, position=0)):
-
             anchor_img = anchor_img.to(device)  # send image to GPU
             positive_img = positive_img.to(device)  # send image to GPU
             negative_img = negative_img.to(device)  # send image to GPU
@@ -164,22 +169,28 @@ def learn(argv):
             anchor_out = model(anchor_img)
             positive_out = model(positive_img)
             negative_out = model(negative_img)
-
+            #Clears space on GPU I think
             del anchor_img
             del positive_img
             del negative_img
-
+            #Triplet Loss !!! + Backprop
             loss = criterion(anchor_out, positive_out, negative_out)
             loss.backward()
             optimizer.step()
-            total_triples += anchor_out.shape[0]
 
+        # Initially use_labels is True
+        # This aims to split up the data by labels initially
+        # After epoch 20, it begins to train the view invariance
+        if stop_label_training == epoch:
+            train_ds.training_labels = False
 
+        print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, positive_loss))
 
-        print("Epoch: {}/{} - Loss: {:.4f} - Total triples: {}".format(epoch + 1, numepochs, positive_loss, total_triples))
+        #Writes errors to pd to review while training
+        lines.to_csv(outpath + "_losses.csv")
 
+        #Saves model so that distances can be updated using new model
         torch.save({
-            'emb_size': emb_size,
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
             'optimzier_state_dict': optimizer.state_dict(),
@@ -188,6 +199,7 @@ def learn(argv):
 
         train_ds.modelfile = outpath + '.pth'
 
+    #Calculate distances one final time to get last error
     train_ds.calc_distances()
     positive_loss, negative_loss = train_ds.calculate_error_averages()
     positive_losses.append(positive_loss)
@@ -195,11 +207,11 @@ def learn(argv):
 
     import matplotlib.pyplot as plt
 
-    fig, axs = plt.subplots(1,2)
+    fig, axs = plt.subplots(1, 2)
     xs = [i for i in range(numepochs + 1)]
     print(positive_losses, negative_losses)
-    axs[0].plot(xs,negative_losses)
-    axs[1].plot(xs,positive_losses)
+    axs[0].plot(xs, negative_losses)
+    axs[1].plot(xs, positive_losses)
     plt.show()
 
     return
@@ -289,7 +301,6 @@ def extract(argv):
 
 
 def main(argv):
-
     if len(argv) < 2:
         print(usagemessage)
         return
@@ -300,6 +311,7 @@ def main(argv):
         extract(argv[1:])
 
     return
+
 
 def get_args():
     print(usagemessage)
@@ -328,5 +340,5 @@ if __name__ == "__main__":
     #
     # print("DONE")
 
-#-learn ../../uob_image_set_100 1000 10 20 data/triplet
-#-extract data/triplet.pth ../../uob_image_set_100 data/triplet 1
+# -learn ../../uob_image_set_100 1000 10 20 data/triplet
+# -extract data/triplet.pth ../../uob_image_set_100 data/triplet 1

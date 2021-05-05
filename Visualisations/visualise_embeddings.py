@@ -8,56 +8,47 @@ import random
 import torch.tensor as tensor
 from tqdm import tqdm
 from PIL import Image
+import torch
+from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
+from Dataset_CNN.CNN import data_transforms, ScoreFolder
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if device.type == "cuda":
+    print('Using GPU device: ' + torch.cuda.get_device_name(torch.cuda.current_device()) )
+else:
+    print('Using CPU device.')
+
+DATA_FOLDER = "../../uob_image_set_100"
+BATCH_SIZE = 50
 
 def load_data(outfile):
+    image_data = ScoreFolder(root=DATA_FOLDER, transform=data_transforms["val"])
+    data_loader = torch.utils.data.DataLoader(image_data,
+                                              batch_size=BATCH_SIZE,
+                                              shuffle=True)
 
-    embeddings = np.loadtxt("../Dataset_CNN/data/" + outfile + "_scores.txt")
-    with open('../Dataset_CNN/data/' + outfile + '_files.txt') as f:
-        files = f.read().split("\n")
-        if "" in files: files.remove("")
+    checkpoint = torch.load("../Dataset_CNN/data/100_images.pth")
 
-    with open('../Dataset_CNN/data/' + outfile + '_labels.txt') as f:
-        labels = f.read().split("\n")
-        if "" in labels: labels.remove("")
+    model = EmbeddingNetwork()
+    model.load_state_dict(checkpoint['model_state_dict'])
+    # model = torch.jit.script(model).to(device) # send model to GPU
+    model = model.to(device)
+    model.eval()
 
+    all_embs = []
+    all_names = []
 
-    labels = [eval(lbl) for lbl in labels]
+    for step, (batch_imgs, batch_labels, batch_paths) in tqdm(enumerate(data_loader)):
+        batch_names = [path.split("\\")[-1].replace(".jpg", "") for path in batch_paths]
+        batch_imgs, batch_labels = batch_imgs.to(device), batch_labels.to(device)
+        embs = model(batch_imgs)
+        embs = embs.detach().cpu().numpy()
 
-    # files = first_n(files)
-    # labels = first_n(labels)
-
-    return embeddings, labels, files
-
-
-def PCA_Output(embeddings, labels):
-    num_img_list = [0 for i in labels]
-    for lbl in labels:
-        num_img_list[int(lbl)] += 1
-
-    num_img_list = num_img_list[:len(labels)]
-    labels = ['PC' +  str(x) for x in range(1,len(num_img_list)+2)]
+        all_embs.extend(embs)
+        all_names.extend(batch_names)
 
 
-
-    scaled_data = preprocessing.scale(embeddings)
-    pca = PCA()
-    pca.fit(scaled_data)
-    pca_data = pca.transform(scaled_data)
-
-    pca_df = pd.DataFrame(pca_data, columns=labels)
-    fig = plt.figure()
-    # ax = plt.axes(projection="3d")
-
-
-    img_counter = 0
-    for n in num_img_list:
-        r = lambda: random.randint(0,255)
-        random_color = '#%02X%02X%02X' % (r(),r(),r())
-        # plt.plot(pca_df.PC1[img_counter:img_counter + n], pca_df.PC2[img_counter:img_counter + n],pca_df.PC3[img_counter:img_counter + n] ,'o',color=random_color)
-        plt.plot(pca_df.PC1[img_counter:img_counter + n], pca_df.PC2[img_counter:img_counter + n],'o',color=random_color)
-        img_counter += n
-
-    plt.show()
+    return np.array(all_embs), all_names
 
 """
 Random Example
@@ -67,31 +58,30 @@ Random Example
     
 """
 
-def dist_dict(scores, files, outfile):
-    s = scores.shape
-    dist_dict = { k : {} for k in files}
+def dist_dict(embeddings, names):
+    s = embeddings.shape
+    dist_dict = {k : {} for k in names}
 
-    for i,f1 in tqdm(enumerate(files)):
-        for j,f2 in enumerate(files):
+    for i,f1 in tqdm(enumerate(names)):
+        for j,f2 in enumerate(names):
             if i != j:
-                f1_embedding = scores[i]
-                f2_embedding = scores[j]
+                f1_embedding = embeddings[i]
+                f2_embedding = embeddings[j]
 
                 dist = np.sum(abs(f1_embedding - f2_embedding))
 
                 dist_dict[f1][f2] = dist_dict[f2][f1] = dist
 
-    np.save("../Dataset_CNN/data/" + outfile + "_diffs.npy", dist_dict)
     return dist_dict
 
-def get_accuracy(file, dist_dict, k = 5):
-    name = file.split("\\")[-2]
-    row = list(dist_dict[file].items())
+def get_accuracy(name, dist_dict, k = 5):
+    folder_name = name.split("_")[0]
+    row = list(dist_dict[name].items())
     k_smallest_diffs = sorted(row, key=lambda x: x[1])[0:k]
-    image_paths =  k_smallest_diffs
+    image_names =  k_smallest_diffs
     score = 0
-    for path,_ in image_paths:
-        if name in path:
+    for other_names,_ in image_names:
+        if folder_name in other_names:
             score += 1
 
     return score/ k
@@ -108,14 +98,16 @@ def showImages(images):
     dst.show()
 
 
-def show_example(files, dist_dict, k = 7, file = None):
+def show_example(names, dist_dict, k = 7, name = None):
 
-    if file is None:
-        file = random.choice(files)
+    if names is None:
+        name = random.choice(names)
 
-    row = list(dist_dict[file].items())
-    k_smallest_diffs = sorted(row, key=lambda x: x[1])[0:k ]
-    image_paths = [(file,0)] + k_smallest_diffs
+    folder = lambda name : name.split("_")[0]
+    row = list(dist_dict[name].items())
+    k_smallest_diffs = sorted(row, key=lambda x: x[1])[0:k]
+    image_names = [(name,0)] + k_smallest_diffs
+    image_paths = [(DATA_FOLDER + "/" + folder(name) + "/" + name + ".jpg",dist) for name,dist in image_names]
     out = []
     imgs = []
     for path,diff in image_paths:
@@ -125,30 +117,31 @@ def show_example(files, dist_dict, k = 7, file = None):
 
     showImages(imgs)
 
-generate_dict = True
-outfile = "1000_images"
-scores, labels, files = load_data(outfile)
+generate_dict = False
+outfile = "100_images"
+embs, names = load_data(outfile)
 if generate_dict:
-    diffs = dist_dict(scores, files, outfile)
+    diffs = dist_dict(embs, names)
+    np.save("../Dataset_CNN/data/" + outfile + "_diffs.npy", diffs)
 else:
-    diffs = np.load("../Dataset_CNN/data/" + outfile + "_diffs.npy", allow_pickle=True)
+    diffs = np.load("../Dataset_CNN/data/" + outfile + "_diffs.npy", allow_pickle=True).item()
 
 accuracies = []
 max_ac = 0
-k = 4
+k = 5
 best = ""
-random.shuffle(files)
-for i in range(500):
-    file =random.choice(files)
-    ac = get_accuracy(file, diffs, k)
+random.shuffle(names)
+for i in range(400):
+    name =names[i]
+    ac = get_accuracy(name, diffs, k)
     accuracies.append(ac)
 
     if ac >= max_ac:
-        best = file
+        best = name
         max_ac = ac
 
 print(np.mean(accuracies))
 print({ac : accuracies.count(ac) for ac in accuracies})
 print(best)
 print(max_ac)
-show_example(files, diffs, k=k, file=best)
+show_example(names, diffs, k=k, name=best)

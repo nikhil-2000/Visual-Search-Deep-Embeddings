@@ -13,7 +13,7 @@ class EmbeddingNetwork(nn.Module):
     def __init__(self, is_pretrained=True, freeze_params=True):
         super(EmbeddingNetwork, self).__init__()
 
-        self.backbone = models.resnet152(pretrained=is_pretrained)
+        self.backbone = models.resnet50(pretrained=is_pretrained)
         set_parameter_requires_grad(self.backbone, freeze_params)
 
         # replace the last classification layer with an embedding layer.
