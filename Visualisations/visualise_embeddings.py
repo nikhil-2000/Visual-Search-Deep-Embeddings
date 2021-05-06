@@ -18,7 +18,7 @@ if device.type == "cuda":
 else:
     print('Using CPU device.')
 
-DATA_FOLDER = "../../uob_image_set_100"
+DATA_FOLDER = "../../uob_image_set_1000"
 BATCH_SIZE = 50
 
 def load_data(outfile):
@@ -117,31 +117,47 @@ def show_example(names, dist_dict, k = 7, name = None):
 
     showImages(imgs)
 
-generate_dict = False
-outfile = "100_images"
-embs, names = load_data(outfile)
-if generate_dict:
-    diffs = dist_dict(embs, names)
-    np.save("../Dataset_CNN/data/" + outfile + "_diffs.npy", diffs)
-else:
-    diffs = np.load("../Dataset_CNN/data/" + outfile + "_diffs.npy", allow_pickle=True).item()
 
-accuracies = []
-max_ac = 0
-k = 5
-best = ""
-random.shuffle(names)
-for i in range(400):
-    name =names[i]
-    ac = get_accuracy(name, diffs, k)
-    accuracies.append(ac)
+def test_model():
+    generate_dict = True
+    outfile = "1000_images"
+    embs, names = load_data(outfile)
+    if generate_dict:
+        diffs = dist_dict(embs, names)
+        np.save("../Dataset_CNN/data/" + outfile + "_diffs.npy", diffs)
+    else:
+        diffs = np.load("../Dataset_CNN/data/" + outfile + "_diffs.npy", allow_pickle=True).item()
 
-    if ac >= max_ac:
-        best = name
-        max_ac = ac
+    accuracies = []
+    max_ac = 0
+    k = 5
+    best = ""
+    random.shuffle(names)
+    for i in range(400):
+        name =names[i]
+        ac = get_accuracy(name, diffs, k)
+        accuracies.append(ac)
 
-print(np.mean(accuracies))
-print({ac : accuracies.count(ac) for ac in accuracies})
-print(best)
-print(max_ac)
-show_example(names, diffs, k=k, name=best)
+        if ac >= max_ac:
+            best = name
+            max_ac = ac
+
+    print(np.mean(accuracies))
+    print({ac : accuracies.count(ac) for ac in accuracies})
+    print(best)
+    print(max_ac)
+    show_example(names, diffs, k=k, name=best)
+
+def loss_graphs():
+    df = pd.read_csv("../Dataset_CNN/data/1000_images_losses.csv")
+    df["error_diff"] = df['Neg_Loss'] - df['Pos_Loss']
+    import seaborn as sns
+    fig,axs = plt.subplots(1,3)
+    fig.set_size_inches(30,10)
+    sns.lineplot(x = df["Epochs"], y = df["Pos_Loss"], ax=axs[0]).set_title("Pos_Loss")
+    sns.lineplot(x = df["Epochs"], y = df["Neg_Loss"], ax=axs[1]).set_title("Neg_loss")
+    sns.lineplot(x = df["Epochs"], y = df["error_diff"], ax=axs[2]).set_title("Error Diff")
+
+    plt.show()
+
+loss_graphs()

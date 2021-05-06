@@ -1,5 +1,7 @@
 from __future__ import absolute_import
-import sys, os
+
+import os
+import sys
 
 project_path = os.path.abspath("..")
 sys.path.insert(0, project_path)
@@ -9,21 +11,20 @@ T_G_HEIGHT = 134
 T_G_NUMCHANNELS = 3
 T_G_SEED = 1337
 
-usagemessage = 'Usage: \n\t -learn <Train Folder> <batch size> <num epochs> <output model file root> <search size> <stop_label_training> \n\t -extract <Model File> <Input Image Folder> <Output File Prefix (TXT)> <tsne perplexity (optional)>\n\t\tBuilds and scores a triplet-loss embedding model.'
+usagemessage = 'Usage: \n\t -learn <Train Folder> <batch size> <num epochs> <output model file root> <search size> <stop_label_training> <margin> \n\t -extract <Model File> <Input Image Folder> <Output File Prefix (TXT)> <tsne perplexity (optional)>\n\t\tBuilds and scores a triplet-loss embedding model.'
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import transforms, models, datasets
-from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
-import pandas as pd
 
 # Misc. Necessities
 import sys
 import numpy as np
 import random
-from typing import Any, Callable, cast, Dict, List, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple
 
 # visualizations
 from tqdm import tqdm
@@ -35,6 +36,9 @@ from Dataset_CNN.triples_dataset import ClothesFolder
 
 # correct "too many files" error
 import torch.multiprocessing
+
+from torch.utils.tensorboard import SummaryWriter
+writer = SummaryWriter()
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 torch.cuda.empty_cache()
@@ -105,7 +109,7 @@ class ScoreFolder(ImageFolder):
 
 
 def learn(argv):
-    # <Train Folder> <batch size> <num epochs> <output model file root> <search size> <stop_label_training>
+    # <Train Folder> <batch size> <num epochs> <output model file root> <search size> <stop_label_training> <margin>
     if len(argv) < 5:
         print(usagemessage)
         return
@@ -117,7 +121,7 @@ def learn(argv):
     search_size = int(argv[4])
     stop_label_training = int(argv[5])
 
-    margin = 0.5
+    margin = float(argv[6])
 
     print('Triplet embeding training session. Inputs: ' + in_t_folder + ', ' + str(
         batch) + ', ' + str(numepochs) + ', ' + str(margin) + ', ' + outpath)
@@ -142,11 +146,8 @@ def learn(argv):
         epoch = 0
         loss = 0
 
-    positive_losses = []
-    negative_losses = []
-    cols = ["Epochs", "Pos_Loss", "Neg_Loss"]
-    lines = pd.DataFrame(columns=cols)
 
+    s = 0
     for epoch in tqdm(range(numepochs), desc="Epochs"):
         # Split data into "Batches" and calc distances
         train_ds.pick_batches(search_size)
@@ -154,10 +155,11 @@ def learn(argv):
 
         # Calc errors before training for this epoch and add to df
         positive_loss, negative_loss = train_ds.calculate_error_averages()
-        positive_losses.append(positive_loss)
-        negative_losses.append(negative_loss)
-        row = {cols[0]: epoch, cols[1]: positive_loss, cols[2]: negative_loss}
-        lines = lines.append(row, ignore_index=True)
+
+
+        writer.add_scalar("Other/Positive_Loss", positive_loss, epoch)
+        writer.add_scalar("Other/Negative_Loss", positive_loss, epoch)
+        writer.add_scalar("Other/Pos_Neg_Difference", negative_loss - positive_loss, epoch)
 
         for step, (anchor_img, positive_img, negative_img) in enumerate(
                 tqdm(train_loader, desc="Training", leave=True, position=0)):
@@ -177,17 +179,23 @@ def learn(argv):
             loss = criterion(anchor_out, positive_out, negative_out)
             loss.backward()
             optimizer.step()
+            batch_norm = torch.linalg.norm(anchor_out, ord = 1)
+            embedding_norm = torch.mean(batch_norm)
+
+            writer.add_scalar("Loss/triplet_loss", loss,s )
+            writer.add_scalar("Loss/embedding_norm", embedding_norm, s)
+
+            s += 1
 
         # Initially use_labels is True
         # This aims to split up the data by labels initially
-        # After epoch 20, it begins to train the view invariance
+        # After variable epochs, it begins to train the view invariance
         if stop_label_training == epoch:
             train_ds.training_labels = False
 
-        print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, positive_loss))
+        print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, negative_loss - positive_loss))
 
         #Writes errors to pd to review while training
-        lines.to_csv(outpath + "_losses.csv")
 
         #Saves model so that distances can be updated using new model
         torch.save({
@@ -202,17 +210,12 @@ def learn(argv):
     #Calculate distances one final time to get last error
     train_ds.calc_distances()
     positive_loss, negative_loss = train_ds.calculate_error_averages()
-    positive_losses.append(positive_loss)
-    negative_losses.append(negative_loss)
 
-    import matplotlib.pyplot as plt
+    writer.add_scalar("Other/Positive_Loss", positive_loss, epoch)
+    writer.add_scalar("Other/Negative_Loss", positive_loss, epoch)
+    writer.add_scalar("Other/Pos_Neg_Difference", negative_loss - positive_loss, epoch)
 
-    fig, axs = plt.subplots(1, 2)
-    xs = [i for i in range(numepochs + 1)]
-    print(positive_losses, negative_losses)
-    axs[0].plot(xs, negative_losses)
-    axs[1].plot(xs, positive_losses)
-    plt.show()
+    writer.flush()
 
     return
 
@@ -313,32 +316,10 @@ def main(argv):
     return
 
 
-def get_args():
-    print(usagemessage)
-    print("Enter args:")
-    args = input()
-    args = args.split(" ")
-    return args
-
-
 # Main Driver
 if __name__ == "__main__":
-    # args = get_args()
     main(sys.argv[1:])
-    # in_t_folder = "../../uob_image_set_100"
-    # batch = 1
-    # train_ds = ClothesFolder(root=in_t_folder, transform=data_transforms["train"])
-    # train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True, num_workers=1)
-    #
-    # anchor,pos, neg = next(iter(train_loader))
-    # fig, axs = plt.subplots(1,3)
-    # print(anchor.shape)
-    # axs[0].imshow(anchor[0].permute(1, 2, 0))
-    # axs[1].imshow(pos[0].permute(1, 2, 0))
-    # axs[2].imshow(neg[0].permute(1, 2, 0))
-    # plt.show()
-    #
-    # print("DONE")
+
 
 # -learn ../../uob_image_set_100 1000 10 20 data/triplet
 # -extract data/triplet.pth ../../uob_image_set_100 data/triplet 1

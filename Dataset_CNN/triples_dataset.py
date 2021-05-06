@@ -104,10 +104,10 @@ class ClothesFolder(ImageFolder):
             positives = list(positive_error_diffs.items())
             names, pos_distances = list(zip(*positives))
             weights = self.get_probabilties(pos_distances, exp_sign=1)
-            # pos_path = np.random.choice(pos_paths, p=weights)
+            pos_path = np.random.choice(pos_paths, p=weights)
+            pos_distance = pos_distances[pos_paths.index(pos_path)]
 
-            #Chooses the furthest positives all the time
-            pos_path = pos_paths[-1]
+
 
         elif self.training_labels:
             #Grabs all folders of same label in batch
@@ -123,7 +123,7 @@ class ClothesFolder(ImageFolder):
             names, pos_distances = list(zip(*positives))
             weights = self.get_probabilties(pos_distances, exp_sign=1)
             pos_name = np.random.choice(names, p=weights)
-
+            pos_distance = pos_distances[names.index(pos_name)]
             pos_idx = self.class_to_idx[pos_name.split("_")[0]]
             paths_pos_dir = self.images[pos_idx]
             pos_path = [p for p in paths_pos_dir if pos_name in p][0]
@@ -137,7 +137,11 @@ class ClothesFolder(ImageFolder):
         # neg_name = np.random.choice(names, p=weights)
 
         #Gets a semihard negative, explained in function
-        neg_name,neg_distance = self.get_semi_hard_negative(anchor_name, pos_distances[-1])
+        negatives = self.get_semi_hard_negatives(anchor_name, pos_distance)
+        names, distances = list(zip(*negatives))
+        weights = self.get_probabilties(distances, exp_sign=1)
+        neg_name = np.random.choice(names, p=weights)
+
         neg_idx = self.class_to_idx[neg_name.split("_")[0]]
         paths_neg_dir = self.images[neg_idx]
         neg_path = [p for p in paths_neg_dir if neg_name in p][0]
@@ -196,7 +200,7 @@ class ClothesFolder(ImageFolder):
     #     k_closest = sorted(row, key=lambda x: x[1])[0:k]
     #     return k_closest
 
-    def get_semi_hard_negative(self,image_name,pos_dist):
+    def get_semi_hard_negatives(self,image_name,pos_dist):
         #Getting the batch distances
         folder_name = image_name.split("_")[0]
         anchor_label = self.folder_to_labels[folder_name]
@@ -236,7 +240,7 @@ class ClothesFolder(ImageFolder):
             row = list(batch_distances.items())
 
         #Currently returns random, need to implement weights
-        return random.choice(row)
+        return row
 
 
     def pick_batches(self, size):
@@ -276,7 +280,7 @@ class ClothesFolder(ImageFolder):
         #For each batch:
         # Calculate embeddings of all images
         # Get the differences between images in a folder + images with everything else
-        #
+
         for i, batch in enumerate(tqdm(self.batches, leave=True, position=0, desc="Batch Distances")):
             embeddings, image_names = self.feed_batch(batch, model)
             neg_diff, pos_diff, _, _ = g_e_m.get_diff_dicts(embeddings, image_names)
@@ -344,15 +348,17 @@ class ClothesFolder(ImageFolder):
         #Calculates errors so we can track how the network is performing
         positive_losses = []
         negative_losses = []
+        embeddings_mean_norm = []
         #Calculates a loss for each batch
         for batch in self.batch_distances:
             negative_distances_batch, positive_distances_batch = batch
             pos_loss = calc_loss(positive_distances_batch)
-            neg_loss = calc_loss(negative_distances_batch, k = 50)
+            neg_loss = calc_loss(negative_distances_batch)
             positive_losses.append(pos_loss)
             negative_losses.append(neg_loss)
 
-        return np.mean(positive_losses)/np.std(positive_losses), np.mean(negative_losses)/np.std(negative_losses)
+        # return np.mean(positive_losses)/np.std(positive_losses), np.mean(negative_losses)/np.std(negative_losses)
+        return np.mean(positive_losses), np.mean(negative_losses)
 
 
 
