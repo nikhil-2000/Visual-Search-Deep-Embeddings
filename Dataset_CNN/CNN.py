@@ -124,7 +124,7 @@ def learn(argv):
     margin = float(argv[6])
 
     print('Triplet embeding training session. Inputs: ' + in_t_folder + ', ' + str(
-        batch) + ', ' + str(numepochs) + ', ' + str(margin) + ', ' + outpath)
+        batch) + ', ' + str(numepochs) + ', ' + str(margin) + ', ' + outpath + ', ' + str(search_size) + ', ' + str(stop_label_training) + ', ' + str(margin))
 
     train_ds = ClothesFolder(root=in_t_folder, transform=data_transforms['train'], margin=margin)
     train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True, num_workers=1)
@@ -157,9 +157,9 @@ def learn(argv):
         positive_loss, negative_loss = train_ds.calculate_error_averages()
 
 
-        writer.add_scalar("Other/Positive_Loss", positive_loss, epoch)
-        writer.add_scalar("Other/Negative_Loss", positive_loss, epoch)
-        writer.add_scalar("Other/Pos_Neg_Difference", negative_loss - positive_loss, epoch)
+        writer.add_scalar("Epoch_Checks/Positive_Loss", positive_loss, epoch)
+        writer.add_scalar("Epoch_Checks/Negative_Loss", negative_loss, epoch)
+        writer.add_scalar("Epoch_Checks/Pos_Neg_Difference", negative_loss - positive_loss, epoch)
 
         for step, (anchor_img, positive_img, negative_img) in enumerate(
                 tqdm(train_loader, desc="Training", leave=True, position=0)):
@@ -185,7 +185,13 @@ def learn(argv):
             writer.add_scalar("Loss/triplet_loss", loss,s )
             writer.add_scalar("Loss/embedding_norm", embedding_norm, s)
 
-            s += 1
+            batch_positive_loss = torch.mean(criterion.calc_euclidean(anchor_out,positive_out))
+            batch_negative_loss = torch.mean(criterion.calc_euclidean(anchor_out,negative_out))
+            writer.add_scalar("Other/Positive_Loss", batch_positive_loss, s)
+            writer.add_scalar("Other/Negative_Loss", batch_negative_loss, s)
+            writer.add_scalar("Other/Pos_Neg_Difference", batch_negative_loss - batch_positive_loss, s)
+
+            s += batch
 
         # Initially use_labels is True
         # This aims to split up the data by labels initially
@@ -211,9 +217,9 @@ def learn(argv):
     train_ds.calc_distances()
     positive_loss, negative_loss = train_ds.calculate_error_averages()
 
-    writer.add_scalar("Other/Positive_Loss", positive_loss, epoch)
-    writer.add_scalar("Other/Negative_Loss", positive_loss, epoch)
-    writer.add_scalar("Other/Pos_Neg_Difference", negative_loss - positive_loss, epoch)
+    writer.add_scalar("Epoch_Checks/Positive_Loss", positive_loss, epoch)
+    writer.add_scalar("Epoch_Checks/Negative_Loss", negative_loss, epoch)
+    writer.add_scalar("Epoch_Checks/Pos_Neg_Difference", negative_loss - positive_loss, epoch)
 
     writer.flush()
 
@@ -312,6 +318,8 @@ def main(argv):
         learn(argv[1:])
     elif 'extract' in argv[0]:
         extract(argv[1:])
+    else:
+        print("Didn't select learn or extract")
 
     return
 

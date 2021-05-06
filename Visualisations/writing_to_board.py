@@ -13,7 +13,7 @@ from Dataset_CNN.CNN import EmbeddingNetwork, ScoreFolder, data_transforms
 from Visualisations.DF import DeepFeatures
 
 BATCH_SIZE = 50
-DATA_FOLDER = r'../../uob_image_set_1000'
+DATA_FOLDER = r'../../uob_image_set_100'
 IMGS_FOLDER = './Outputs/Images'
 EMBS_FOLDER = './Outputs/Embeddings'
 TB_FOLDER = './Outputs/Tensorboard'
@@ -34,7 +34,7 @@ data_loader = torch.utils.data.DataLoader(image_data,
                                           shuffle=True)
 
 
-checkpoint = torch.load("../Dataset_CNN/data/1000_images.pth")
+checkpoint = torch.load("../Dataset_CNN/data/new_triplets.pth")
 
 model = EmbeddingNetwork()
 model.load_state_dict(checkpoint['model_state_dict'])

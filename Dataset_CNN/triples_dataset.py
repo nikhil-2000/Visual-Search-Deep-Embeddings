@@ -281,7 +281,7 @@ class ClothesFolder(ImageFolder):
         # Calculate embeddings of all images
         # Get the differences between images in a folder + images with everything else
 
-        for i, batch in enumerate(tqdm(self.batches, leave=True, position=0, desc="Batch Distances")):
+        for i, batch in enumerate(tqdm(self.batches, desc="Batch Distances")):
             embeddings, image_names = self.feed_batch(batch, model)
             neg_diff, pos_diff, _, _ = g_e_m.get_diff_dicts(embeddings, image_names)
             # Neg diff is the distances between an image in Folder A and all images in Folder B,C,D...
