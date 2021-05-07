@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import datetime
 import os
 import sys
 
@@ -18,13 +19,11 @@ import torch.optim as optim
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
 
 # Misc. Necessities
 import sys
 import numpy as np
 import random
-from typing import Any, Callable, Optional, Tuple
 
 # visualizations
 from tqdm import tqdm
@@ -32,13 +31,16 @@ from sklearn.manifold import TSNE
 import seaborn as sns
 import matplotlib.pyplot as plt
 from collections import Counter
-from Dataset_CNN.triples_dataset import ClothesFolder
+
+from Dataset_CNN.triples_dataset import ClothesFolder,ScoreFolder
+from Dataset_CNN.writing_to_projector import write_to_projector
+from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
 
 # correct "too many files" error
 import torch.multiprocessing
 
 from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter()
+
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 torch.cuda.empty_cache()
@@ -96,32 +98,33 @@ class TripletLoss(nn.Module):
         return losses.mean()
 
 
-class ScoreFolder(ImageFolder):
-    def __init__(self, root: str, transform: Optional[Callable] = None):
-        super(ScoreFolder, self).__init__(root=root, transform=transform)
-
-    def __getitem__(self, index: int) -> Tuple[Any, Any, Any]:
-        img, label = super(ScoreFolder, self).__getitem__(index=index)
-
-        # label may be meaningless if the data isn't labeled,
-        # but it can simply be ignored.
-        return img, label, self.samples[index][0]
-
 
 def learn(argv):
     # <Train Folder> <batch size> <num epochs> <output model file root> <search size> <stop_label_training> <margin>
-    if len(argv) < 5:
+    if len(argv) < 6:
         print(usagemessage)
         return
 
+
     in_t_folder = argv[0]
+    assert os.path.isdir(in_t_folder)
+
     batch = int(argv[1])
+    assert batch > 0, "Batch size should be more than 0"
+
     numepochs = int(argv[2])
+    assert numepochs > 0, "Need more than " + str(numepochs)  + " epochs"
+
     outpath = argv[3]
+
     search_size = int(argv[4])
+    assert search_size > 0, "Need larger search size than " + str(search_size)
+
     stop_label_training = int(argv[5])
+    assert 0 <= stop_label_training <= numepochs, "Need to stop training labels at some point"
 
     margin = float(argv[6])
+    assert 0 < margin, "Pick a margin greater than 0"
 
     print('Triplet embeding training session. Inputs: ' + in_t_folder + ', ' + str(
         batch) + ', ' + str(numepochs) + ', ' + str(margin) + ', ' + outpath + ', ' + str(search_size) + ', ' + str(stop_label_training) + ', ' + str(margin))
@@ -138,7 +141,6 @@ def learn(argv):
     optimizer = optim.Adam(model.parameters(), lr=0.01)
     # criterion = torch.jit.script(TripletLoss(margin=10.0))
     criterion = TripletLoss(margin=margin)
-
     model.train()
 
     # let invalid epochs pass through without training
@@ -146,6 +148,8 @@ def learn(argv):
         epoch = 0
         loss = 0
 
+    run_name = datetime.datetime.now().strftime("%b%d_%H-%M-%S") + "_Epochs" + str(numepochs) + "_Datasize" + str(len(train_ds))
+    writer = SummaryWriter(log_dir="runs/" + run_name)
 
     s = 0
     for epoch in tqdm(range(numepochs), desc="Epochs"):
@@ -199,6 +203,7 @@ def learn(argv):
         if stop_label_training == epoch:
             train_ds.training_labels = False
 
+
         print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, negative_loss - positive_loss))
 
         #Writes errors to pd to review while training
@@ -217,12 +222,14 @@ def learn(argv):
     train_ds.calc_distances()
     positive_loss, negative_loss = train_ds.calculate_error_averages()
 
-    writer.add_scalar("Epoch_Checks/Positive_Loss", positive_loss, epoch)
-    writer.add_scalar("Epoch_Checks/Negative_Loss", negative_loss, epoch)
-    writer.add_scalar("Epoch_Checks/Pos_Neg_Difference", negative_loss - positive_loss, epoch)
+    writer.add_scalar("Epoch_Checks/Positive_Loss", positive_loss, epoch+1)
+    writer.add_scalar("Epoch_Checks/Negative_Loss", negative_loss, epoch+1)
+    writer.add_scalar("Epoch_Checks/Pos_Neg_Difference", negative_loss - positive_loss, epoch+1)
 
+
+
+    write_to_projector(in_t_folder, "Outputs/Images", "Outputs/Embeddings","runs", run_name + "_projector", model)
     writer.flush()
-
     return
 
 

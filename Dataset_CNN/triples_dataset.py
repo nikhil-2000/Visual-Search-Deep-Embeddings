@@ -16,6 +16,7 @@ import pandas as pd
 from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from typing import Any, Callable, Optional, Tuple
 
 ##Generating Triples method from this article https://towardsdatascience.com/image-similarity-using-triplet-loss-3744c0f67973
 
@@ -45,14 +46,11 @@ class ClothesFolder(ImageFolder):
 
     def __init__(self, root, transform=None, margin = 1.0):
         super(ClothesFolder, self).__init__(root=root, transform=transform)
-        name = os.path.basename(os.path.normpath(root))
-        # if not any([name == p for p in os.listdir("data")]):
-        #     g_e_m.generate_matrix(root, name)
+
 
         self.labels_to_folder, self.folder_to_labels = self.convert_to_dict(
             pd.read_csv("../labelling_images/labelled.csv"))
 
-        self.data_path = "data/" + name + "/"
         self.remaining_folders = list(self.folder_to_labels.keys())
 
         self.folder_to_batch = {}
@@ -78,6 +76,9 @@ class ClothesFolder(ImageFolder):
             self.classdictsize[ci] = len(self.images[ci])
 
         self.margin = margin
+
+    def __len__(self):
+        return len(self.class_to_idx.keys())
 
     def load_model(self):
 
@@ -381,7 +382,16 @@ def calc_loss(diff_dict, k = None):
     #Represents the mean error of a batch
     return np.mean(batch_losses)
 
+class ScoreFolder(ImageFolder):
+    def __init__(self, root: str, transform: Optional[Callable] = None):
+        super(ScoreFolder, self).__init__(root=root, transform=transform)
 
+    def __getitem__(self, index: int) -> Tuple[Any, Any, Any]:
+        img, label = super(ScoreFolder, self).__getitem__(index=index)
+
+        # label may be meaningless if the data isn't labeled,
+        # but it can simply be ignored.
+        return img, label, self.samples[index][0]
 
 def show_example_triplet(triple):
     anchor_im, positive_im, negative_im = triple

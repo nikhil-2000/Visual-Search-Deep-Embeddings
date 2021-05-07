@@ -164,8 +164,7 @@ class DeepFeatures(torch.nn.Module):
         all_names_with_labels = [(name, self.folder_to_labels[name]) for name in all_names]
         print(all_embeddings.shape)
         print(all_images.shape)
-        self.writer.add_embedding(all_embeddings,metadata = all_names_with_labels,  label_img=all_images, global_step = self.step, metadata_header = ["Folder","Label"])
-        self.step += 1
+        self.writer.add_embedding(all_embeddings,metadata = all_names_with_labels,  label_img=all_images, metadata_header = ["Folder","Label"])
 
     def convert_to_dict(self, labelled_df):
         label_to_folder = {}
