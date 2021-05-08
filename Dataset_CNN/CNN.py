@@ -126,6 +126,10 @@ def learn(argv):
     margin = float(argv[6])
     assert 0 < margin, "Pick a margin greater than 0"
 
+    if not os.path.isdir("Outputs"): os.mkdir("Outputs")
+    if not os.path.isdir("Outputs/Images"): os.mkdir("Outputs/Images")
+    if not os.path.isdir("Outputs/Embeddings"): os.mkdir("Outputs/Embeddings")
+
     print('Triplet embeding training session. Inputs: ' + in_t_folder + ', ' + str(
         batch) + ', ' + str(numepochs) + ', ' + str(margin) + ', ' + outpath + ', ' + str(search_size) + ', ' + str(stop_label_training) + ', ' + str(margin))
 

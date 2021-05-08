@@ -8,4 +8,7 @@
 /Nikhil/data
 Visualisations/Outputs
 Dataset_CNN/data
+Dataset_CNN/runs
+Dataset_CNN/Outputs
 *.pyc
+*.pth
