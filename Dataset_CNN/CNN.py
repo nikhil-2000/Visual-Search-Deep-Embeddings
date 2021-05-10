@@ -7,8 +7,8 @@ import sys
 project_path = os.path.abspath("..")
 sys.path.insert(0, project_path)
 
-T_G_WIDTH = 100
-T_G_HEIGHT = 134
+T_G_WIDTH = 224
+T_G_HEIGHT = 224
 T_G_NUMCHANNELS = 3
 T_G_SEED = 1337
 
@@ -140,6 +140,11 @@ def learn(argv):
     model = EmbeddingNetwork(freeze_params=False)
 
     # model = torch.jit.script(model).to(device) # send model to GPU
+    # if torch.cuda.device_count() > 1:
+    #     print("Let's use", torch.cuda.device_count(), "GPUs!")
+    #     # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+    #     model = nn.DataParallel(model)
+
     model = model.to(device)  # send model to GPU
 
     optimizer = optim.Adam(model.parameters(), lr=0.01)
