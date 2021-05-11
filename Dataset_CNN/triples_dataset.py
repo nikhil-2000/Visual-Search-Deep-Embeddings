@@ -138,6 +138,8 @@ class ClothesFolder(ImageFolder):
         # neg_name = np.random.choice(names, p=weights)
 
         #Gets a semihard negative, explained in function
+        # negatives = self.get_closest(anchor_name, 10)
+        # negatives = self.get_closest_with_labels(anchor_name, 10)
         negatives = self.get_semi_hard_negatives(anchor_name, pos_distance)
         names, distances = list(zip(*negatives))
         weights = self.get_probabilties(distances, exp_sign=1)
@@ -166,40 +168,37 @@ class ClothesFolder(ImageFolder):
         return a_sample, p_sample, n_sample
 
 
-    # def get_closest(self, image_name, k):
-    #     negative_error_diffs = self.load_diff_dict("negatives", image_name)
-    #     isLabelled = image_name[:8] in self.folder_to_labels.keys()
-    #
-    #     row = list(negative_error_diffs.items())
-    #     if isLabelled:
-    #         label = self.folder_to_labels[image_name[:8]]
-    #         other_folders = self.labels_to_folder[label]
-    #         row = list(filter(lambda r: r[0][:8] in other_folders, row))
-    #
-    #     if len(row) == 0: row = list(negative_error_diffs.items())
-    #     k_smallest_idx = sorted(row, key=lambda x: x[1])[0:k]
-    #     return k_smallest_idx
-    #
-    # def get_closest_v2(self, image_name, k):
-    #     folder_name = image_name.split("_")[0]
-    #     batch_idx = self.folder_to_batch[folder_name]
-    #     batch_distances = self.batch_distances[batch_idx][0][image_name + ".jpg"]
-    #
-    #     isLabelled = folder_name in self.folder_to_labels.keys()
-    #
-    #     row = list(batch_distances.items())
-    #     if len(row) == 0:
-    #         folder_names = random.choices(list(self.class_to_idx.keys()), k=k)
-    #         return [(name, 1) for name in folder_names]
-    #
-    #     if isLabelled:
-    #         label = self.folder_to_labels[image_name[:8]]
-    #         other_folders = self.labels_to_folder[label]
-    #         row = list(filter(lambda r: r[0][:8] in other_folders, row))
-    #
-    #     if len(row) == 0: row = list(batch_distances.items())
-    #     k_closest = sorted(row, key=lambda x: x[1])[0:k]
-    #     return k_closest
+    def get_closest(self, image_name, k):
+        folder_name = image_name.split("_")[0]
+        batch_idx = self.folder_to_batch[folder_name]
+        batch_distances = self.batch_distances[batch_idx][0][image_name + ".jpg"]
+
+
+        row = list(batch_distances.items())
+
+        k_closest = sorted(row, key=lambda x: x[1])[0:k]
+        return k_closest
+
+    def get_closest_with_labels(self, image_name, k):
+        folder_name = image_name.split("_")[0]
+        batch_idx = self.folder_to_batch[folder_name]
+        batch_distances = self.batch_distances[batch_idx][0][image_name + ".jpg"]
+
+        isLabelled = folder_name in self.folder_to_labels.keys()
+
+        row = list(batch_distances.items())
+        if len(row) == 0:
+            folder_names = random.choices(list(self.class_to_idx.keys()), k=k)
+            return [(name, 1) for name in folder_names]
+
+        if isLabelled:
+            label = self.folder_to_labels[image_name[:8]]
+            other_folders = self.labels_to_folder[label]
+            row = list(filter(lambda r: r[0][:8] in other_folders, row))
+
+        if len(row) == 0: row = list(batch_distances.items())
+        k_closest = sorted(row, key=lambda x: x[1])[0:k]
+        return k_closest
 
     def get_semi_hard_negatives(self,image_name,pos_dist):
         #Getting the batch distances

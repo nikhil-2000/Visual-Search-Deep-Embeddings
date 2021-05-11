@@ -324,6 +324,21 @@ def extract(argv):
 
     return
 
+def visualise(argv):
+    in_t_folder = argv[0]
+    model_path = argv[1]
+    run_name = datetime.datetime.now().strftime("%b%d_%H-%M-%S")
+
+    checkpoint = torch.load(model_path)
+
+    model = EmbeddingNetwork()
+    model.load_state_dict(checkpoint['model_state_dict'])
+    # model = torch.jit.script(model).to(device) # send model to GPU
+    model = model.to(device)
+    model.eval()
+
+    write_to_projector(in_t_folder, "Outputs/Images", "Outputs/Embeddings","runs", run_name + "_projector", model)
+
 
 def main(argv):
     if len(argv) < 2:
@@ -334,6 +349,8 @@ def main(argv):
         learn(argv[1:])
     elif 'extract' in argv[0]:
         extract(argv[1:])
+    elif "visualise" in argv[0]:
+        visualise(argv[1:])
     else:
         print("Didn't select learn or extract")
 
