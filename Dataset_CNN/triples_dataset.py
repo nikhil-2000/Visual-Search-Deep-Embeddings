@@ -92,7 +92,7 @@ class ClothesFolder(ImageFolder):
     def __getitem__(self, index):
         #Grabs the sample and batch
         anchor_path, anchor_target = self.samples[index]
-        anchor_name = anchor_path.split("\\")[-1].split(".")[0]
+        anchor_name = os.path.basename(os.path.normpath(anchor_path)).split(".")[0]
         folder_name = anchor_name.split("_")[0]
         batch_idx = self.folder_to_batch[folder_name]
 
