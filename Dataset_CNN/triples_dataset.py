@@ -348,38 +348,62 @@ class ClothesFolder(ImageFolder):
         #Calculates errors so we can track how the network is performing
         positive_losses = []
         negative_losses = []
-        embeddings_mean_norm = []
+        accuracies = []
         #Calculates a loss for each batch
         for batch in self.batch_distances:
             negative_distances_batch, positive_distances_batch = batch
-            pos_loss = calc_loss(positive_distances_batch)
-            neg_loss = calc_loss(negative_distances_batch)
+            pos_loss = self.calc_loss(positive_distances_batch)
+            neg_loss = self.calc_loss(negative_distances_batch)
+            accuracy = self.calc_accuracy(negative_distances_batch, positive_distances_batch)
             positive_losses.append(pos_loss)
             negative_losses.append(neg_loss)
+            accuracies.append(accuracy)
+
 
         # return np.mean(positive_losses)/np.std(positive_losses), np.mean(negative_losses)/np.std(negative_losses)
-        return np.mean(positive_losses), np.mean(negative_losses)
+        return np.mean(positive_losses), np.mean(negative_losses), np.mean(accuracies)
 
 
 
 # images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
-def calc_loss(diff_dict, k = None):
-    #Grab all the losses in a batch diff dict
-    losses = [list(dict_loss.values()) for dict_loss in diff_dict.values()]
-    #Take k closest errors for each image in batch
-    if k is not None:
-        for i,loss in enumerate(losses):
-            sorted_loss = sorted(loss)
-            losses[i] = sorted_loss[:10]
+    def calc_loss(self,diff_dict, k = None):
+        #Grab all the losses in a batch diff dict
+        losses = [list(dict_loss.values()) for dict_loss in diff_dict.values()]
+        #Take k closest errors for each image in batch
+        if k is not None:
+            for i,loss in enumerate(losses):
+                sorted_loss = sorted(loss)
+                losses[i] = sorted_loss[:10]
 
-    #Take average of errors and send back the mean
-    batch_losses = []
-    for loss in losses:
-        avg = np.mean(loss)
-        batch_losses.append(avg)
+        #Take average of errors and send back the mean
+        batch_losses = []
+        for loss in losses:
+            avg = np.mean(loss)
+            batch_losses.append(avg)
 
-    #Represents the mean error of a batch
-    return np.mean(batch_losses)
+        #Represents the mean error of a batch
+        return np.mean(batch_losses)
+
+    def calc_accuracy(self,negative_diffs, positive_diffs):
+
+        accuracies = []
+        all_diffs = {}
+        for k, dist_dict in negative_diffs.items():
+            dist_dict.update(positive_diffs[k])
+            all_diffs[k] = dist_dict
+
+        for name, diffs in all_diffs.items():
+            folder = name.split("_")[0]
+            idx = self.class_to_idx[folder]
+            k = self.classdictsize[idx] + 3
+            sorted_diffs = sorted(list(diffs.items()), key=lambda x: x[1])
+            k_closest = sorted_diffs[:k]
+            count = len([name for (name,dist) in k_closest if folder in name])
+            accuracies.append(count/k)
+
+        return np.mean(accuracies)
+
+
 
 class ScoreFolder(ImageFolder):
     def __init__(self, root: str, transform: Optional[Callable] = None):

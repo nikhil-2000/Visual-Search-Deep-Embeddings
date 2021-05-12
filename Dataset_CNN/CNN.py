@@ -140,10 +140,10 @@ def learn(argv):
     model = EmbeddingNetwork(freeze_params=False)
 
     # model = torch.jit.script(model).to(device) # send model to GPU
-    # if torch.cuda.device_count() > 1:
-    #     print("Let's use", torch.cuda.device_count(), "GPUs!")
-    #     # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-    #     model = nn.DataParallel(model)
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+        model = nn.DataParallel(model)
 
     model = model.to(device)  # send model to GPU
 
@@ -167,13 +167,12 @@ def learn(argv):
         train_ds.calc_distances()
 
         # Calc errors before training for this epoch and add to df
-        positive_loss, negative_loss = train_ds.calculate_error_averages()
+        positive_loss, negative_loss, avg_accuracy = train_ds.calculate_error_averages()
 
 
-        writer.add_scalar("Epoch_Checks/Positive_Loss", positive_loss, epoch)
-        writer.add_scalar("Epoch_Checks/Negative_Loss", negative_loss, epoch)
         writer.add_scalar("Epoch_Checks/Pos_Neg_Difference", negative_loss - positive_loss, epoch)
-
+        writer.add_scalar("Epoch_Checks/Avg_Accuracy", avg_accuracy, epoch)
+        losses = []
         for step, (anchor_img, positive_img, negative_img) in enumerate(
                 tqdm(train_loader, desc="Training", leave=True, position=0)):
             anchor_img = anchor_img.to(device)  # send image to GPU
@@ -192,6 +191,9 @@ def learn(argv):
             loss = criterion(anchor_out, positive_out, negative_out)
             loss.backward()
             optimizer.step()
+
+            losses.append(loss.cpu().detach().numpy())
+
             batch_norm = torch.linalg.norm(anchor_out, ord = 1)
             embedding_norm = torch.mean(batch_norm)
 
@@ -212,7 +214,7 @@ def learn(argv):
         if stop_label_training == epoch:
             train_ds.training_labels = False
 
-
+        writer.add_scalar("Epoch_Checks/triplet_loss", np.mean(losses), epoch+1)
         print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, negative_loss - positive_loss))
 
         #Writes errors to pd to review while training
@@ -229,11 +231,11 @@ def learn(argv):
 
     #Calculate distances one final time to get last error
     train_ds.calc_distances()
-    positive_loss, negative_loss = train_ds.calculate_error_averages()
+    positive_loss, negative_loss, avg_accuracy = train_ds.calculate_error_averages()
 
-    writer.add_scalar("Epoch_Checks/Positive_Loss", positive_loss, epoch+1)
-    writer.add_scalar("Epoch_Checks/Negative_Loss", negative_loss, epoch+1)
+
     writer.add_scalar("Epoch_Checks/Pos_Neg_Difference", negative_loss - positive_loss, epoch+1)
+    writer.add_scalar("Epoch_Checks/Avg_Accuracy", avg_accuracy, epoch+1)
 
 
 
