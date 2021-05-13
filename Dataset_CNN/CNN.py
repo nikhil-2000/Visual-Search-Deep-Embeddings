@@ -7,8 +7,8 @@ import sys
 project_path = os.path.abspath("..")
 sys.path.insert(0, project_path)
 
-T_G_WIDTH = 224
-T_G_HEIGHT = 224
+T_G_WIDTH = 100
+T_G_HEIGHT = 100
 T_G_NUMCHANNELS = 3
 T_G_SEED = 1337
 
@@ -40,6 +40,7 @@ from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
 import torch.multiprocessing
 
 from torch.utils.tensorboard import SummaryWriter
+from sklearn.model_selection import GridSearchCV
 
 
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -49,7 +50,7 @@ np.random.seed(T_G_SEED)
 torch.manual_seed(T_G_SEED)
 random.seed(T_G_SEED)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 if device.type == "cuda":
     print('Using GPU device: ' + torch.cuda.get_device_name(torch.cuda.current_device()))
 else:
@@ -72,6 +73,7 @@ data_transforms = {
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
 }
+
 
 
 def set_parameter_requires_grad(model, feature_extracting):
@@ -120,11 +122,14 @@ def learn(argv):
     search_size = int(argv[4])
     assert search_size > 0, "Need larger search size than " + str(search_size)
 
-    stop_label_training = int(argv[5])
+    stop_label_training = 0 #int(argv[5])
     assert 0 <= stop_label_training <= numepochs, "Need to stop training labels at some point"
 
     margin = float(argv[6])
     assert 0 < margin, "Pick a margin greater than 0"
+
+
+
 
     if not os.path.isdir("Outputs"): os.mkdir("Outputs")
     if not os.path.isdir("Outputs/Images"): os.mkdir("Outputs/Images")
@@ -169,9 +174,10 @@ def learn(argv):
         # Calc errors before training for this epoch and add to df
         positive_loss, negative_loss, avg_accuracy = train_ds.calculate_error_averages()
 
+        if epoch > 0:
+            writer.add_scalar("Epoch_Checks/Pos_Neg_Difference", negative_loss - positive_loss, epoch)
+            writer.add_scalar("Epoch_Checks/Avg_Accuracy", avg_accuracy, epoch)
 
-        writer.add_scalar("Epoch_Checks/Pos_Neg_Difference", negative_loss - positive_loss, epoch)
-        writer.add_scalar("Epoch_Checks/Avg_Accuracy", avg_accuracy, epoch)
         losses = []
         for step, (anchor_img, positive_img, negative_img) in enumerate(
                 tqdm(train_loader, desc="Training", leave=True, position=0)):
@@ -215,6 +221,7 @@ def learn(argv):
             train_ds.training_labels = False
 
         writer.add_scalar("Epoch_Checks/triplet_loss", np.mean(losses), epoch+1)
+
         print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, negative_loss - positive_loss))
 
         #Writes errors to pd to review while training
