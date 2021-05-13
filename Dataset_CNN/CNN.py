@@ -136,7 +136,7 @@ def learn(argv):
         batch) + ', ' + str(numepochs) + ', ' + str(margin) + ', ' + outpath + ', ' + str(search_size) + ', ' + str(stop_label_training) + ', ' + str(margin))
 
     train_ds = ClothesFolder(root=in_t_folder, transform=data_transforms['train'], margin=margin)
-    train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True, num_workers=8)
+    train_loader = DataLoader(train_ds, batch_size=batch, shuffle=True, num_workers = torch.cuda.device_count() * 4 )
 
     # Allow all parameters to be fit
     model = EmbeddingNetwork(freeze_params=False)
