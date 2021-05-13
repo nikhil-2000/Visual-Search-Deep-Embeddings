@@ -7,8 +7,8 @@ import sys
 project_path = os.path.abspath("..")
 sys.path.insert(0, project_path)
 
-T_G_WIDTH = 224
-T_G_HEIGHT = 224
+T_G_WIDTH = 100
+# T_G_HEIGHT = 224
 T_G_NUMCHANNELS = 3
 T_G_SEED = 1337
 
@@ -149,7 +149,7 @@ def learn(argv):
 
     model = model.to(device)  # send model to GPU
 
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
     # criterion = torch.jit.script(TripletLoss(margin=10.0))
     criterion = TripletLoss(margin=margin)
     model.train()
@@ -197,17 +197,17 @@ def learn(argv):
 
             losses.append(loss.cpu().detach().numpy())
 
-            batch_norm = torch.linalg.norm(anchor_out, ord = 1)
-            embedding_norm = torch.mean(batch_norm)
+            # batch_norm = torch.linalg.norm(anchor_out, ord = 1, dim= 1)
+            # embedding_norm = torch.mean(batch_norm)
 
             writer.add_scalar("Loss/triplet_loss", loss,s )
-            writer.add_scalar("Loss/embedding_norm", embedding_norm, s)
+            # writer.add_scalar("Loss/embedding_norm", embedding_norm, s)
 
             batch_positive_loss = torch.mean(criterion.calc_euclidean(anchor_out,positive_out))
             batch_negative_loss = torch.mean(criterion.calc_euclidean(anchor_out,negative_out))
             writer.add_scalar("Other/Positive_Loss", batch_positive_loss, s)
             writer.add_scalar("Other/Negative_Loss", batch_negative_loss, s)
-            writer.add_scalar("Other/Pos_Neg_Difference", batch_negative_loss - batch_positive_loss, s)
+            writer.add_scalar("Loss/Pos_Neg_Difference", batch_negative_loss - batch_positive_loss, s)
 
             s += batch
 
