@@ -7,8 +7,8 @@ import sys
 project_path = os.path.abspath("..")
 sys.path.insert(0, project_path)
 
-T_G_WIDTH = 100
-T_G_HEIGHT = 100
+T_G_WIDTH = 224
+T_G_HEIGHT = 224
 T_G_NUMCHANNELS = 3
 T_G_SEED = 1337
 
@@ -18,7 +18,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from torchvision.datasets import ImageFolder
 
 # Misc. Necessities
 import sys
@@ -40,8 +39,6 @@ from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
 import torch.multiprocessing
 
 from torch.utils.tensorboard import SummaryWriter
-from sklearn.model_selection import GridSearchCV
-
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 torch.cuda.empty_cache()
