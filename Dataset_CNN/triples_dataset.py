@@ -138,6 +138,8 @@ class ClothesFolder(ImageFolder):
         # neg_name = np.random.choice(names, p=weights)
 
         #Gets a semihard negative, explained in function
+        # negatives = self.get_closest(anchor_name, 10)
+        # negatives = self.get_closest_with_labels(anchor_name, 10)
         negatives = self.get_semi_hard_negatives(anchor_name, pos_distance)
         names, distances = list(zip(*negatives))
         weights = self.get_probabilties(distances, exp_sign=1)
@@ -166,40 +168,37 @@ class ClothesFolder(ImageFolder):
         return a_sample, p_sample, n_sample
 
 
-    # def get_closest(self, image_name, k):
-    #     negative_error_diffs = self.load_diff_dict("negatives", image_name)
-    #     isLabelled = image_name[:8] in self.folder_to_labels.keys()
-    #
-    #     row = list(negative_error_diffs.items())
-    #     if isLabelled:
-    #         label = self.folder_to_labels[image_name[:8]]
-    #         other_folders = self.labels_to_folder[label]
-    #         row = list(filter(lambda r: r[0][:8] in other_folders, row))
-    #
-    #     if len(row) == 0: row = list(negative_error_diffs.items())
-    #     k_smallest_idx = sorted(row, key=lambda x: x[1])[0:k]
-    #     return k_smallest_idx
-    #
-    # def get_closest_v2(self, image_name, k):
-    #     folder_name = image_name.split("_")[0]
-    #     batch_idx = self.folder_to_batch[folder_name]
-    #     batch_distances = self.batch_distances[batch_idx][0][image_name + ".jpg"]
-    #
-    #     isLabelled = folder_name in self.folder_to_labels.keys()
-    #
-    #     row = list(batch_distances.items())
-    #     if len(row) == 0:
-    #         folder_names = random.choices(list(self.class_to_idx.keys()), k=k)
-    #         return [(name, 1) for name in folder_names]
-    #
-    #     if isLabelled:
-    #         label = self.folder_to_labels[image_name[:8]]
-    #         other_folders = self.labels_to_folder[label]
-    #         row = list(filter(lambda r: r[0][:8] in other_folders, row))
-    #
-    #     if len(row) == 0: row = list(batch_distances.items())
-    #     k_closest = sorted(row, key=lambda x: x[1])[0:k]
-    #     return k_closest
+    def get_closest(self, image_name, k):
+        folder_name = image_name.split("_")[0]
+        batch_idx = self.folder_to_batch[folder_name]
+        batch_distances = self.batch_distances[batch_idx][0][image_name + ".jpg"]
+
+
+        row = list(batch_distances.items())
+
+        k_closest = sorted(row, key=lambda x: x[1])[0:k]
+        return k_closest
+
+    def get_closest_with_labels(self, image_name, k):
+        folder_name = image_name.split("_")[0]
+        batch_idx = self.folder_to_batch[folder_name]
+        batch_distances = self.batch_distances[batch_idx][0][image_name + ".jpg"]
+
+        isLabelled = folder_name in self.folder_to_labels.keys()
+
+        row = list(batch_distances.items())
+        if len(row) == 0:
+            folder_names = random.choices(list(self.class_to_idx.keys()), k=k)
+            return [(name, 1) for name in folder_names]
+
+        if isLabelled:
+            label = self.folder_to_labels[image_name[:8]]
+            other_folders = self.labels_to_folder[label]
+            row = list(filter(lambda r: r[0][:8] in other_folders, row))
+
+        if len(row) == 0: row = list(batch_distances.items())
+        k_closest = sorted(row, key=lambda x: x[1])[0:k]
+        return k_closest
 
     def get_semi_hard_negatives(self,image_name,pos_dist):
         #Getting the batch distances
@@ -349,38 +348,62 @@ class ClothesFolder(ImageFolder):
         #Calculates errors so we can track how the network is performing
         positive_losses = []
         negative_losses = []
-        embeddings_mean_norm = []
+        accuracies = []
         #Calculates a loss for each batch
         for batch in self.batch_distances:
             negative_distances_batch, positive_distances_batch = batch
-            pos_loss = calc_loss(positive_distances_batch)
-            neg_loss = calc_loss(negative_distances_batch)
+            pos_loss = self.calc_loss(positive_distances_batch)
+            neg_loss = self.calc_loss(negative_distances_batch)
+            accuracy = self.calc_accuracy(negative_distances_batch, positive_distances_batch)
             positive_losses.append(pos_loss)
             negative_losses.append(neg_loss)
+            accuracies.append(accuracy)
+
 
         # return np.mean(positive_losses)/np.std(positive_losses), np.mean(negative_losses)/np.std(negative_losses)
-        return np.mean(positive_losses), np.mean(negative_losses)
+        return np.mean(positive_losses), np.mean(negative_losses), np.mean(accuracies)
 
 
 
 # images_path = 'D:\My Docs/University\Applied Data Science\Project/uob_image_set'
-def calc_loss(diff_dict, k = None):
-    #Grab all the losses in a batch diff dict
-    losses = [list(dict_loss.values()) for dict_loss in diff_dict.values()]
-    #Take k closest errors for each image in batch
-    if k is not None:
-        for i,loss in enumerate(losses):
-            sorted_loss = sorted(loss)
-            losses[i] = sorted_loss[:10]
+    def calc_loss(self,diff_dict, k = None):
+        #Grab all the losses in a batch diff dict
+        losses = [list(dict_loss.values()) for dict_loss in diff_dict.values()]
+        #Take k closest errors for each image in batch
+        if k is not None:
+            for i,loss in enumerate(losses):
+                sorted_loss = sorted(loss)
+                losses[i] = sorted_loss[:10]
 
-    #Take average of errors and send back the mean
-    batch_losses = []
-    for loss in losses:
-        avg = np.mean(loss)
-        batch_losses.append(avg)
+        #Take average of errors and send back the mean
+        batch_losses = []
+        for loss in losses:
+            avg = np.mean(loss)
+            batch_losses.append(avg)
 
-    #Represents the mean error of a batch
-    return np.mean(batch_losses)
+        #Represents the mean error of a batch
+        return np.mean(batch_losses)
+
+    def calc_accuracy(self,negative_diffs, positive_diffs):
+
+        accuracies = []
+        all_diffs = {}
+        for k, dist_dict in negative_diffs.items():
+            dist_dict.update(positive_diffs[k])
+            all_diffs[k] = dist_dict
+
+        for name, diffs in all_diffs.items():
+            folder = name.split("_")[0]
+            idx = self.class_to_idx[folder]
+            k = self.classdictsize[idx] + 3
+            sorted_diffs = sorted(list(diffs.items()), key=lambda x: x[1])
+            k_closest = sorted_diffs[:k]
+            count = len([name for (name,dist) in k_closest if folder in name])
+            accuracies.append(count/k)
+
+        return np.mean(accuracies)
+
+
 
 class ScoreFolder(ImageFolder):
     def __init__(self, root: str, transform: Optional[Callable] = None):

@@ -7,8 +7,8 @@ import sys
 project_path = os.path.abspath("..")
 sys.path.insert(0, project_path)
 
-T_G_WIDTH = 224
-T_G_HEIGHT = 224
+T_G_WIDTH = 100
+T_G_HEIGHT = 100
 T_G_NUMCHANNELS = 3
 T_G_SEED = 1337
 
@@ -40,6 +40,7 @@ from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
 import torch.multiprocessing
 
 from torch.utils.tensorboard import SummaryWriter
+from sklearn.model_selection import GridSearchCV
 
 
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -49,7 +50,7 @@ np.random.seed(T_G_SEED)
 torch.manual_seed(T_G_SEED)
 random.seed(T_G_SEED)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 if device.type == "cuda":
     print('Using GPU device: ' + torch.cuda.get_device_name(torch.cuda.current_device()))
 else:
@@ -72,6 +73,7 @@ data_transforms = {
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ]),
 }
+
 
 
 def set_parameter_requires_grad(model, feature_extracting):
@@ -120,11 +122,14 @@ def learn(argv):
     search_size = int(argv[4])
     assert search_size > 0, "Need larger search size than " + str(search_size)
 
-    stop_label_training = int(argv[5])
+    stop_label_training = 0 #int(argv[5])
     assert 0 <= stop_label_training <= numepochs, "Need to stop training labels at some point"
 
     margin = float(argv[6])
     assert 0 < margin, "Pick a margin greater than 0"
+
+
+
 
     if not os.path.isdir("Outputs"): os.mkdir("Outputs")
     if not os.path.isdir("Outputs/Images"): os.mkdir("Outputs/Images")
@@ -140,10 +145,10 @@ def learn(argv):
     model = EmbeddingNetwork(freeze_params=False)
 
     # model = torch.jit.script(model).to(device) # send model to GPU
-    # if torch.cuda.device_count() > 1:
-    #     print("Let's use", torch.cuda.device_count(), "GPUs!")
-    #     # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
-    #     model = nn.DataParallel(model)
+    if torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+        model = nn.DataParallel(model)
 
     model = model.to(device)  # send model to GPU
 
@@ -167,13 +172,13 @@ def learn(argv):
         train_ds.calc_distances()
 
         # Calc errors before training for this epoch and add to df
-        positive_loss, negative_loss = train_ds.calculate_error_averages()
+        positive_loss, negative_loss, avg_accuracy = train_ds.calculate_error_averages()
 
+        if epoch > 0:
+            writer.add_scalar("Epoch_Checks/Pos_Neg_Difference", negative_loss - positive_loss, epoch)
+            writer.add_scalar("Epoch_Checks/Avg_Accuracy", avg_accuracy, epoch)
 
-        writer.add_scalar("Epoch_Checks/Positive_Loss", positive_loss, epoch)
-        writer.add_scalar("Epoch_Checks/Negative_Loss", negative_loss, epoch)
-        writer.add_scalar("Epoch_Checks/Pos_Neg_Difference", negative_loss - positive_loss, epoch)
-
+        losses = []
         for step, (anchor_img, positive_img, negative_img) in enumerate(
                 tqdm(train_loader, desc="Training", leave=True, position=0)):
             anchor_img = anchor_img.to(device)  # send image to GPU
@@ -192,6 +197,9 @@ def learn(argv):
             loss = criterion(anchor_out, positive_out, negative_out)
             loss.backward()
             optimizer.step()
+
+            losses.append(loss.cpu().detach().numpy())
+
             batch_norm = torch.linalg.norm(anchor_out, ord = 1)
             embedding_norm = torch.mean(batch_norm)
 
@@ -212,6 +220,7 @@ def learn(argv):
         if stop_label_training == epoch:
             train_ds.training_labels = False
 
+        writer.add_scalar("Epoch_Checks/triplet_loss", np.mean(losses), epoch+1)
 
         print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, negative_loss - positive_loss))
 
@@ -229,11 +238,11 @@ def learn(argv):
 
     #Calculate distances one final time to get last error
     train_ds.calc_distances()
-    positive_loss, negative_loss = train_ds.calculate_error_averages()
+    positive_loss, negative_loss, avg_accuracy = train_ds.calculate_error_averages()
 
-    writer.add_scalar("Epoch_Checks/Positive_Loss", positive_loss, epoch+1)
-    writer.add_scalar("Epoch_Checks/Negative_Loss", negative_loss, epoch+1)
+
     writer.add_scalar("Epoch_Checks/Pos_Neg_Difference", negative_loss - positive_loss, epoch+1)
+    writer.add_scalar("Epoch_Checks/Avg_Accuracy", avg_accuracy, epoch+1)
 
 
 
@@ -324,6 +333,21 @@ def extract(argv):
 
     return
 
+def visualise(argv):
+    in_t_folder = argv[0]
+    model_path = argv[1]
+    run_name = datetime.datetime.now().strftime("%b%d_%H-%M-%S")
+
+    checkpoint = torch.load(model_path)
+
+    model = EmbeddingNetwork()
+    model.load_state_dict(checkpoint['model_state_dict'])
+    # model = torch.jit.script(model).to(device) # send model to GPU
+    model = model.to(device)
+    model.eval()
+
+    write_to_projector(in_t_folder, "Outputs/Images", "Outputs/Embeddings","runs", run_name + "_projector", model)
+
 
 def main(argv):
     if len(argv) < 2:
@@ -334,6 +358,8 @@ def main(argv):
         learn(argv[1:])
     elif 'extract' in argv[0]:
         extract(argv[1:])
+    elif "visualise" in argv[0]:
+        visualise(argv[1:])
     else:
         print("Didn't select learn or extract")
 
