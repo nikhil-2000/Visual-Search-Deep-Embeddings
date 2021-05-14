@@ -93,27 +93,27 @@ def learn(argv):
         return
 
     in_t_folder = argv[0]
-    assert os.path.isdir(in_t_folder), "Pick valid image directory"
+    assert os.path.isdir(in_t_folder), "Pick valid image directory\n" + usagemessage
 
     batch = int(argv[1])
-    assert batch > 0, "Batch size should be more than 0"
+    assert batch > 0, "Batch size should be more than 0\n" + usagemessage
 
     numepochs = int(argv[2])
-    assert numepochs > 0, "Need more than " + str(numepochs) + " epochs"
+    assert numepochs > 0, "Need more than " + str(numepochs) + " epochs\n" + usagemessage
 
     outpath = argv[3] + "_" + datetime.datetime.now().strftime("%b%d_%H-%M-%S")
 
     search_size = int(argv[4])
-    assert search_size > 0, "Need larger search size than " + str(search_size)
+    assert search_size > 0, "Need larger search size than 0\n" + usagemessage
 
     margin = float(argv[5])
-    assert 0 < margin, "Pick a margin greater than 0"
+    assert 0 < margin, "Pick a margin greater than 0\n" + usagemessage
 
     phases = ["train"]
     doValidation = len(argv) > 6
     if doValidation:
         validation_folder = argv[6]
-        assert os.path.isdir(validation_folder), "Pick valid image directory"
+        assert os.path.isdir(validation_folder), "Pick valid image directory\n" + usagemessage
         phases.append("validation")
 
     print('Triplet embeding training session. Inputs: ' + in_t_folder + ', ' + str(
