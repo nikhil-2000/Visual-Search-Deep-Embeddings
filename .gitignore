@@ -10,5 +10,6 @@ Visualisations/Outputs
 Dataset_CNN/data
 Dataset_CNN/runs
 Dataset_CNN/Outputs
+Dataset_CNN/runs_pre_validation
 *.pyc
 *.pth

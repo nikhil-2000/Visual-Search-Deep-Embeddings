@@ -11,12 +11,13 @@ from torchvision import transforms
 from torchvision.datasets import ImageFolder
 import Dataset_CNN.generate_error_matrix as g_e_m
 import torch
-import pickle
 import pandas as pd
 from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from typing import Any, Callable, Optional, Tuple
+from Dataset_CNN.constants import *
+
 
 ##Generating Triples method from this article https://towardsdatascience.com/image-similarity-using-triplet-loss-3744c0f67973
 
@@ -24,22 +25,6 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 torch.cuda.empty_cache()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-input_size = 100
-data_transforms = {
-    'train': transforms.Compose([
-        transforms.RandomResizedCrop(input_size),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-    'val': transforms.Compose([
-        transforms.Resize(input_size),
-        transforms.CenterCrop(input_size),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ]),
-}
 
 
 class ClothesFolder(ImageFolder):
@@ -56,8 +41,6 @@ class ClothesFolder(ImageFolder):
         self.folder_to_batch = {}
         self.batches = []
         self.batch_distances = []
-
-        self.training_labels = True
 
         self.modelfile = None
 
@@ -97,37 +80,16 @@ class ClothesFolder(ImageFolder):
         batch_idx = self.folder_to_batch[folder_name]
 
         #Gets all paths + distances in same folder
-        if not self.training_labels:
-            pos_paths = [i for i in self.images[anchor_target] if i != anchor_path]
-            positive_error_diffs = self.batch_distances[batch_idx][1][anchor_name + ".jpg"]
+        pos_paths = [i for i in self.images[anchor_target] if i != anchor_path]
+        positive_error_diffs = self.batch_distances[batch_idx][1][anchor_name + ".jpg"]
 
-            #Weights choices (Not used rn)
-            positives = list(positive_error_diffs.items())
-            names, pos_distances = list(zip(*positives))
-            weights = self.get_probabilties(pos_distances, exp_sign=1)
-            pos_path = np.random.choice(pos_paths, p=weights)
-            pos_distance = pos_distances[pos_paths.index(pos_path)]
+        #Weights choices (Not used rn)
+        positives = list(positive_error_diffs.items())
+        names, pos_distances = list(zip(*positives))
+        weights = self.get_probabilties(pos_distances, exp_sign=1)
+        pos_path = np.random.choice(pos_paths, p=weights)
+        pos_distance = pos_distances[pos_paths.index(pos_path)]
 
-
-
-        elif self.training_labels:
-            #Grabs all folders of same label in batch
-            anchor_label = self.folder_to_labels[folder_name]
-
-            #Grabs all "positives" with same label
-            other_folder_distances = list(self.batch_distances[batch_idx][0][anchor_name + ".jpg"].items())
-            same_folder_distances = list(self.batch_distances[batch_idx][1][anchor_name + ".jpg"].items())
-            other_folder_distances.extend(same_folder_distances)
-            positives = [(name,dist) for (name,dist) in other_folder_distances if self.folder_to_labels[name.split("_")[0]] == anchor_label]
-
-            #Picks a positive based on distances, weights further postives higher
-            names, pos_distances = list(zip(*positives))
-            weights = self.get_probabilties(pos_distances, exp_sign=1)
-            pos_name = np.random.choice(names, p=weights)
-            pos_distance = pos_distances[names.index(pos_name)]
-            pos_idx = self.class_to_idx[pos_name.split("_")[0]]
-            paths_pos_dir = self.images[pos_idx]
-            pos_path = [p for p in paths_pos_dir if pos_name in p][0]
 
 
         # to do next:weight closer images higher in random choice
@@ -184,19 +146,17 @@ class ClothesFolder(ImageFolder):
         batch_idx = self.folder_to_batch[folder_name]
         batch_distances = self.batch_distances[batch_idx][0][image_name + ".jpg"]
 
-        isLabelled = folder_name in self.folder_to_labels.keys()
 
         row = list(batch_distances.items())
         if len(row) == 0:
             folder_names = random.choices(list(self.class_to_idx.keys()), k=k)
             return [(name, 1) for name in folder_names]
 
-        if isLabelled:
-            label = self.folder_to_labels[image_name[:8]]
-            other_folders = self.labels_to_folder[label]
-            row = list(filter(lambda r: r[0][:8] in other_folders, row))
+        label = self.folder_to_labels[image_name[:8]]
+        other_folders = self.labels_to_folder[label]
+        row = list(filter(lambda r: r[0][:8] in other_folders, row))
 
-        if len(row) == 0: row = list(batch_distances.items())
+        if len(row) < k: row = list(batch_distances.items())
         k_closest = sorted(row, key=lambda x: x[1])[0:k]
         return k_closest
 
@@ -209,17 +169,8 @@ class ClothesFolder(ImageFolder):
 
         row = list(batch_distances.items())
 
-        #Select a negative of different label
-        if self.training_labels:
-            label = self.folder_to_labels[image_name[:8]]
-            other_folders = self.labels_to_folder[label]
-            row = [(name,dist) for (name,dist) in row if self.folder_to_labels[name.split("_")[0]] != anchor_label]
-
         #Select a negative of a same label
-        elif not self.training_labels:
-            label = self.folder_to_labels[image_name[:8]]
-            other_folders = self.labels_to_folder[label]
-            row = [(name,dist) for (name,dist) in row if self.folder_to_labels[name.split("_")[0]] == anchor_label]
+        row = [(name,dist) for (name,dist) in row if self.folder_to_labels[name.split("_")[0]] == anchor_label]
 
         #Reset if there isn't any of same label in batch
         if len(row) == 0: row = list(batch_distances.items())
@@ -231,7 +182,7 @@ class ClothesFolder(ImageFolder):
         #Select triplet further than postive if no semi-hard triplets found
         if len(row) == 0:
             row = list(batch_distances.items())
-            row = filter(lambda name_dist:  name_dist[1] > pos_dist , row)
+            row = filter(lambda name_dist:  pos_dist + self.margin > name_dist[1] , row)
             row = list(row)
 
         # If there is no triplets further than positive, just pick any in batch

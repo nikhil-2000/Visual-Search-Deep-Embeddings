@@ -54,10 +54,7 @@ torch.manual_seed(T_G_SEED)
 random.seed(T_G_SEED)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-if device.type == "cuda":
-    print('Using GPU device: ' + torch.cuda.get_device_name(torch.cuda.current_device()) )
-else:
-    print('Using CPU device.')
+
 
 # Image Transforms for pre-trained model. 
 # Normalization parameters taken from documentation for pre-trained model.

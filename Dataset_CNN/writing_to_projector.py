@@ -8,7 +8,8 @@ sys.path.insert(0, project_path)
 
 from tqdm import tqdm
 import torch.cuda
-from Dataset_CNN.triples_dataset import ScoreFolder, data_transforms
+from Dataset_CNN.constants import *
+from Dataset_CNN.triples_dataset import ScoreFolder
 from Dataset_CNN.ProjectorObject import DeepFeatures
 
 
