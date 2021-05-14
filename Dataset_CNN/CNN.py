@@ -101,7 +101,7 @@ def learn(argv):
     numepochs = int(argv[2])
     assert numepochs > 0, "Need more than " + str(numepochs) + " epochs"
 
-    outpath = argv[3]
+    outpath = argv[3] + "_" + datetime.datetime.now().strftime("%b%d_%H-%M-%S")
 
     search_size = int(argv[4])
     assert search_size > 0, "Need larger search size than " + str(search_size)

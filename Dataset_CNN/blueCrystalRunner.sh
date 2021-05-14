@@ -11,4 +11,4 @@ module load CUDA
 
 source /mnt/storage/home/zx18522/miniconda3/bin/activate DataScience
 
-python CNN.py -learn ../../scratch/uob_image_set 35 2000 data/all_images 300 0 0.5
+python CNN.py -learn /mnt/storage/scratch/zx18522/1000_images 35 2000 all_images 300 0 1 /mnt/storage/scratch/zx18522/500_images

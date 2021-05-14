@@ -11,5 +11,8 @@ Dataset_CNN/data
 Dataset_CNN/runs
 Dataset_CNN/Outputs
 Dataset_CNN/runs_pre_validation
+Dataset_CNN_naive
+Dataset_CNN_with_labels
+Tensorboard_runs
 *.pyc
 *.pth
