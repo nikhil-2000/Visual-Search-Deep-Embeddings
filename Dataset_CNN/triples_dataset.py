@@ -220,12 +220,11 @@ class ClothesFolder(ImageFolder):
 
         while not self.batches[-1]: self.batches.remove([])
 
-    def calc_distances(self):
+    def calc_distances(self, model):
         #Loads current model
-        model = self.load_model()
 
         #Sends to GPU/CPU
-        model = model.to(device)
+        # model = model.to(device)
         model.eval()
         self.batch_distances = [({}, {}) for x in range(len(self.batches))]
         #For each batch:
@@ -238,6 +237,7 @@ class ClothesFolder(ImageFolder):
             # Neg diff is the distances between an image in Folder A and all images in Folder B,C,D...
             # Pos diff is the dsitances between an image in Folder A and all other images in Folder A
             self.batch_distances[i] = (neg_diff, pos_diff)
+
 
     def feed_batch(self, batch, model):
         embeddings = []

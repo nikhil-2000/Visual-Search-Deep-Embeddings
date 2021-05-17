@@ -140,7 +140,8 @@ def learn(argv):
     model = EmbeddingNetwork(freeze_params=False)
 
     # model = torch.jit.script(model).to(device) # send model to GPU
-    if torch.cuda.device_count() > 1:
+    isParallel = torch.cuda.is_available()
+    if isParallel:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
         model = nn.DataParallel(model)
@@ -165,15 +166,16 @@ def learn(argv):
         # Split data into "Batches" and calc distances
 
         for phase in phases:
+
+
+            dataset, data_loader = datasets[phase], data_loaders[phase]
+            dataset.pick_batches(search_size)
+            dataset.calc_distances(model)
+
             if phase == 'train':
                 model.train(True)  # Set model to training mode
             else:
                 model.train(False)  # Set model to evaluate mode
-
-            dataset, data_loader = datasets[phase], data_loaders[phase]
-            dataset.pick_batches(search_size)
-            dataset.calc_distances()
-
             # Calc errors before training for this epoch and add to df
             positive_loss, negative_loss, avg_accuracy = dataset.calculate_error_averages()
 
@@ -227,15 +229,17 @@ def learn(argv):
             print("Epoch: {}/{} - Loss: {:.4f}".format(epoch + 1, numepochs, negative_loss - positive_loss))
 
             # Saves model so that distances can be updated using new model
+
             if phase == "train":
+                weights = model.module.state_dict() if isParallel else model.state_dict()
                 torch.save({
                     'epoch': epoch,
-                    'model_state_dict': model.state_dict(),
+                    'model_state_dict': weights,
                     'optimzier_state_dict': optimizer.state_dict(),
                     'loss': loss
                 }, outpath + '.pth')
 
-            dataset.modelfile = outpath + '.pth'
+                dataset.modelfile = outpath + '.pth'
 
     # Calculate distances one final time to get last error
     epoch += 1
