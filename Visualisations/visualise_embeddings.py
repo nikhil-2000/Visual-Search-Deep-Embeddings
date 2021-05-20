@@ -10,7 +10,8 @@ from tqdm import tqdm
 from PIL import Image
 import torch
 from Dataset_CNN.EmbeddingNetwork import EmbeddingNetwork
-from Dataset_CNN.CNN import data_transforms, ScoreFolder
+from Dataset_CNN.constants import data_transforms
+from Dataset_CNN.triples_dataset import ScoreFolder
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if device.type == "cuda":
@@ -18,7 +19,7 @@ if device.type == "cuda":
 else:
     print('Using CPU device.')
 
-DATA_FOLDER = "../../uob_image_set_1000"
+DATA_FOLDER = "../../uob_image_set_500"
 BATCH_SIZE = 50
 
 def load_data(outfile):
@@ -27,7 +28,7 @@ def load_data(outfile):
                                               batch_size=BATCH_SIZE,
                                               shuffle=True)
 
-    checkpoint = torch.load("../Dataset_CNN/data/100_images.pth")
+    checkpoint = torch.load(outfile)
 
     model = EmbeddingNetwork()
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -68,9 +69,23 @@ def dist_dict(embeddings, names):
                 f1_embedding = embeddings[i]
                 f2_embedding = embeddings[j]
 
-                dist = np.sum(abs(f1_embedding - f2_embedding))
+                dist = np.linalg.norm(f1_embedding - f2_embedding)
 
                 dist_dict[f1][f2] = dist_dict[f2][f1] = dist
+
+    return dist_dict
+
+def diffs_for_file(embeddings, names, file):
+    s = embeddings.shape
+    dist_dict = {k: {} for k in names}
+    f1_embedding = embeddings[names.index(file)]
+    for i, f_other in tqdm(enumerate(names)):
+        if f_other != file:
+            f_other_embedding = embeddings[i]
+
+            dist = np.linalg.norm(f1_embedding - f_other_embedding)
+
+            dist_dict[file][f_other] = dist
 
     return dist_dict
 
@@ -88,14 +103,18 @@ def get_accuracy(name, dist_dict, k = 5):
 
 def showImages(images):
     h,w = images[0].height, images[0].width
-    dst = Image.new('RGB', (len(images) * w, h))
+    dst = Image.new('RGB', ((len(images) // 2) * w , h * 2))
     x = 0
     y = 0
     for i in images:
         dst.paste(i, (x,y))
         x+= w
 
-    dst.show()
+        if x >= dst.width:
+            x = 0
+            y = h
+
+    return dst
 
 
 def show_example(names, dist_dict, k = 7, name = None):
@@ -115,38 +134,34 @@ def show_example(names, dist_dict, k = 7, name = None):
         out.append(path)
         imgs.append(img)
 
-    showImages(imgs)
+    return showImages(imgs)
 
 
 def test_model():
     generate_dict = True
-    outfile = "1000_images"
+    outfile = "../final_model.pth"
     embs, names = load_data(outfile)
-    if generate_dict:
-        diffs = dist_dict(embs, names)
-        np.save("../Dataset_CNN/data/" + outfile + "_diffs.npy", diffs)
-    else:
-        diffs = np.load("../Dataset_CNN/data/" + outfile + "_diffs.npy", allow_pickle=True).item()
+    diffs = dist_dict(embs, names)
+
 
     accuracies = []
     max_ac = 0
     k = 5
     best = ""
     random.shuffle(names)
-    for i in range(400):
-        name =names[i]
+    for name in names:
         ac = get_accuracy(name, diffs, k)
-        accuracies.append(ac)
+        accuracies.append((name,ac))
 
         if ac >= max_ac:
             best = name
             max_ac = ac
 
-    print(np.mean(accuracies))
-    print({ac : accuracies.count(ac) for ac in accuracies})
+    sorted_acs = sorted(accuracies, key=lambda x : x[1])
     print(best)
     print(max_ac)
-    show_example(names, diffs, k=k, name=best)
+    show_example(names, diffs, k=k, name=best).show()
+    print(sorted_acs[-20::])
 
 def loss_graphs():
     df = pd.read_csv("../Dataset_CNN/data/1000_images_losses.csv")
@@ -160,4 +175,18 @@ def loss_graphs():
 
     plt.show()
 
-loss_graphs()
+def resize(im):
+    (width, height) = (im.width // 5, im.height // 5)
+    im_resized = im.resize((width, height))
+    return im_resized
+
+# test_model()
+model_pths = ["../Dataset_CNN\data/no_labels_May20_11-42-23.pth", "../final_model.pth","../Dataset_CNN_naive/data/naive.pth", "../Dataset_CNN_with_labels/data/with_labels.pth", "../Dataset_CNN/data/semi-hard-triplets-50Epochs.pth"]
+names = ["semi-hard-no-labels", "final_model","naive", "with_labels","semi-hard"]
+for i,name in enumerate(names):
+    path = model_pths[i]
+    embeddings,files = load_data(path)
+    diffs = diffs_for_file(embeddings,files, "12912539_0")
+    img = show_example(names, diffs, k=11, name= '12912539_0')
+    img = resize(img)
+    img.save(name + ".png")
